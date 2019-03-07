@@ -48,7 +48,7 @@ sizeof(BITMAPINFOHEADER) = 40
 在这当中，若biClrUsed为0，则说明用到的颜色为2的biBitCount次方（也就无需用到调色板了）
 
 在这当中，biSizeImage为实际的字节数，其中，要求
-https://latex.codecogs.com/gif.latex?biSizeImage = （（biWidth * （biBitCount / 8） + 3） / 4 * 4 ) * biHeight
+<img src=https://latex.codecogs.com/gif.latex?biSizeImage = （（biWidth * （biBitCount / 8） + 3） / 4 * 4 ) * biHeight>
 $$
 biSizeImage = （（biWidth * （biBitCount / 8） + 3） / 4 * 4 ) * biHeight
 $$
