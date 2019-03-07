@@ -1,8 +1,6 @@
 # BMP文件处理
 [TOC]
 
-
-
 ## BITMAP位图
 
 在进行BITMAP图片进行处理的时候，首先要先对BITMAP的数据结构进行分析。
@@ -48,7 +46,6 @@ sizeof(BITMAPINFOHEADER) = 40
 在这当中，若biClrUsed为0，则说明用到的颜色为2的biBitCount次方（也就无需用到调色板了）
 
 在这当中，biSizeImage为实际的字节数，其中，要求
-<img src=https://latex.codecogs.com/gif.latex?biSizeImage = （（biWidth * （biBitCount / 8） + 3） / 4 * 4 ) * biHeight>
 $$
 biSizeImage = （（biWidth * （biBitCount / 8） + 3） / 4 * 4 ) * biHeight
 $$
