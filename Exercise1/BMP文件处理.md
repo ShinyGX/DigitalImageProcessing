@@ -85,6 +85,8 @@ sizeof(RGBQUAD) = 4
 
 在基本了解了BITMAP的内存结构之后，就可以根据其中的信息去读取图片，并分理出其中的RGB分量了。值得注意的在于，若图片的宽度不是4的倍数的时候，读取的时候要跳过行末尾的无意义的字节，否则读取出来的rgb值是错误的，而写入成新的图片的时候，同样的，要手动对行末尾进行补齐
 
+### 具体实现
+
 ```c++
 //用于存储RGB
 typedef struct
@@ -216,4 +218,196 @@ BYTE* toByte(RGB *rgb,int width,int height,int biSize,RGBTAG tag)
 
 ## 对24彩色图像灰度化
 
+灰度图实际上是一个利用心理学灰度公式来得出的一个适合人眼的灰度图片的图
+$$
+GRAY = B * 0.114 + R * 0.299 + G * 0.587
+$$
+在这个图片当中，由于RGB三个分量的值都是一样的（灰色的特性）因此，可以将这个图片从24位图变成一个8位的图
+
+当我们将一个图片从24位转化为8位的时候，有几点是值得注意的
+
+### 改变BITMAPFILEHEADER与BITMAPINFOHEADER
+
+这是当然的，首先要改的就是BITMAPINFOHEADER当中的biBitCount了，毕竟这是标志了这是几位图的信息，其次，还要添加biClrUsed的信息，因为，当图片是8位图的时候，自然而然的就要用到了调色板了。
+
+既然添加了调色板，那么就需要改变BITMAPFILEHEADER当中的biOffBits了，毕竟当中添加了一个调色板，那么图片数据的位置自然会产生变化了
+
+最后，还要分别对BITMAPFILEHEADER当中的bfSize与BITMAPINFOHEADER当中的biSizeImage进行修改，从而使得这些数据指向的内容是符合这张图片的
+
+### 添加调色板
+
+8位图用到的颜色只有256位，因此，添加256个调色板就足够了
+
+```c++
+	RGBQUAD rgbQuad[256];
+	for(int i = 0;i < 256;i++)
+	{
+		rgbQuad[i].rgbRed = i;
+		rgbQuad[i].rgbGreen = i;
+		rgbQuad[i].rgbBlue = i;
+		rgbQuad[i].rgbReserved = 0;
+
+	}
+```
+
+### 具体实现
+
+```c++
+void bitmap2Gray()
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+
+	FILE * pfin = fopen("bitmap/n4x.bmp", "rb");
+	FILE * pfout = fopen("bitmap/gray.bmp", "wb");
+	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
+	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
+
+	int height = infoHeader.biHeight, width = infoHeader.biWidth;
+	if (infoHeader.biBitCount == 24)
+	{
+		int byteWidth = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
+		int size = byteWidth * height;
+
+		BYTE *img = new BYTE[size];
+		RGB *imgRGB = new RGB[width * height];
+
+		fseek(pfin, fileHeader.bfOffBits, 0);
+		fread(img, sizeof(BYTE), size, pfin);
+        
+        //读取信息
+		int point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				imgRGB[i * width + j].b = img[point++];
+				imgRGB[i * width + j].g = img[point++];
+				imgRGB[i * width + j].r = img[point++];
+			}
+
+			while (point % 4 != 0)
+				point++;
+		}
+
+		infoHeader.biBitCount = 8;
+		infoHeader.biClrUsed = 256;
+		
+        //建立调色板
+		RGBQUAD rgbQuad[256];
+		for(int i = 0;i < 256;i++)
+		{
+			rgbQuad[i].rgbRed = i;
+			rgbQuad[i].rgbGreen = i;
+			rgbQuad[i].rgbBlue = i;
+			rgbQuad[i].rgbReserved = 0;
+
+		}
+
+		fileHeader.bfOffBits = 54 + 4 * 256;
+
+		int byteLine = (width * infoHeader.biBitCount / 8  + 3) / 4 * 4;
+		BYTE *newIMG = new BYTE[byteLine * height];
+		infoHeader.biSizeImage = byteLine * height;
+		fileHeader.bfSize = 54 + byteLine * height + 4 * 256;
+		
+		//重新写回BMP当中
+		point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				newIMG[point++] = imgRGB[i * width + j].b * 0.114 + 
+					imgRGB[i * width + j].g * 0.587 + imgRGB[i * width + j].r * 0.299;
+
+			}
+
+			while (point % 4 != 0)
+				newIMG[point++] = 0;
+		}
+
+		fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfout);
+		fwrite(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfout);
+		fwrite(&rgbQuad, 4 * 256, 1, pfout);
+		fwrite(newIMG, sizeof(BYTE), byteLine * height, pfout);
+
+	}
+
+	fclose(pfin);
+	fclose(pfout);
+}
+```
+
+
+
 ## 对8位灰度图进行反色
+
+对图片进行反色是十分简单的一件事了，公式也十分的简单
+$$
+antiColor = abs(color - 255)
+$$
+具体实现和之前的是基本一致的。
+
+当然，由于有灰度图（8位图）有调色板的存在，因此，需要在读取之前跳过调色板的内存块
+
+```c++
+fseek(pfin, fileHeader.bfOffBits, 0);
+```
+
+
+
+### 具体实现
+
+```c++
+void gray2Anticolor()
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+
+	FILE * pfin = fopen("bitmap/gray.bmp", "rb");
+	FILE * pfout = fopen("bitmap/anti_color.bmp", "wb");
+	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
+	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
+
+	int height = infoHeader.biHeight, width = infoHeader.biWidth;
+	if (infoHeader.biBitCount == 8)
+	{
+		int byteWidth = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
+		int size = byteWidth * height;
+
+		BYTE *img = new BYTE[size];
+		BYTE *imgAnticolor = new BYTE[size];
+
+		RGBQUAD rgbquad[256];
+
+		fread(rgbquad, sizeof(RGBQUAD), 256, pfin);
+		fread(img, sizeof(BYTE), size, pfin);
+		int point1 =0, point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				imgAnticolor[point++] = std::abs(img[point1++] - static_cast<byte>(255));
+			}
+
+			while (point % 4 != 0)
+			{
+				imgAnticolor[point++] = 0;
+				point1++;
+			}
+				
+		}
+
+		fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfout);
+		fwrite(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfout);
+		fwrite(&rgbquad, 4 * 256, 1, pfout);
+		fwrite(imgAnticolor, sizeof(BYTE), size, pfout);
+		
+	}
+
+	fclose(pfin);
+	fclose(pfout);
+}
+
+```
+
