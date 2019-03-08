@@ -63,6 +63,45 @@ BYTE* toByte(RGB *rgb,int width,int height,int biSize,RGBTAG tag)
 	return byte;
 }
 
+
+//阴差阳错的正确法（当且仅当width / 4 % == 0 || （width * 3 + 3） % 4 == 0 ）
+void bitmapTo3SingalColorBitmap2()
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+	RGBQUAD rgbquad;
+
+	FILE * pfin = fopen("bitmap/n4x.bmp", "rb");
+	FILE * pfoutR = fopen("bitmap/r2.bmp", "wb");
+
+
+	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
+	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
+	fread(&rgbquad, sizeof(RGBQUAD), infoHeader.biClrUsed, pfin);
+
+	int byteSize = infoHeader.biSizeImage;
+	RGB * rgb = new RGB[byteSize / 3];
+	fread(rgb, sizeof(RGB), byteSize / 3, pfin);
+	
+
+	for(int i = 0;i < byteSize / 3;i++)
+	{
+		rgb[i].b = 0;
+		rgb[i].g = 0;
+	}
+
+
+
+	fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfoutR);
+	fwrite(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfoutR);
+	fwrite(&rgbquad, sizeof(RGBQUAD), infoHeader.biClrUsed, pfoutR);
+	fwrite(rgb, sizeof(RGB), byteSize / 3, pfoutR);
+
+	fclose(pfin);
+	fclose(pfoutR);
+
+}
+
 void bitmapTo3SignalColorBitmap()
 {
 	BITMAPFILEHEADER fileHeader;
