@@ -15,7 +15,7 @@ typedef struct GrayHistogram
 	float gray[256] = {0};
 	int pixelCount = 0;
 	void normalize();
-	void paint();
+	void draw();
 
 private :
 	bool isNormalize = false;
@@ -24,14 +24,12 @@ private :
 IMGDATA loadImage(const std::string& path);
 GRAYHISTOGRAM getHistogram(IMGDATA data);
 
-
-
 int main()
 {	
 	IMGDATA data = loadImage("bitmap/gray.bmp");
 	GRAYHISTOGRAM grayhistogram = getHistogram(data);
 	grayhistogram.normalize();
-	grayhistogram.paint();
+	grayhistogram.draw();
 	system("pause");
 	return 0;
 }
@@ -68,7 +66,7 @@ void GrayHistogram::normalize()
 	isNormalize = true;
 }
 
-void GrayHistogram::paint()
+void GrayHistogram::draw()
 {
 	for(int i = 0;i < 256;i++)
 	{
@@ -76,12 +74,12 @@ void GrayHistogram::paint()
 		if(!isNormalize)
 			for (int j = 0; j < gray[i] / 100; j++)
 			{
-				std::cout << "*";
+				std::cout << '|';
 			}
 		else
 			for (int j = 0; j < gray[i] * (static_cast<float>(pixelCount) / 100); j++)
 			{
-				std::cout << "*";
+				std::cout << '|';
 			}
 
 		std::cout << std::endl;
