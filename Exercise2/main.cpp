@@ -5,14 +5,17 @@
 
 typedef struct ImageData
 {
-	BYTE * img;
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+	RGBQUAD rgbquad[256];
+	BYTE * pImg;
 	int length;
 	int width, height;
 }IMGDATA;
 
 typedef struct GrayHistogram
 {
-	float gray[256] = {0};
+	long double gray[256] = {0};
 	int pixelCount = 0;
 	void normalize();
 	void draw();
@@ -23,18 +26,125 @@ private :
 
 IMGDATA loadImage(const std::string& path);
 GRAYHISTOGRAM getHistogram(IMGDATA data);
+IMGDATA balance(const GRAYHISTOGRAM histogram, const IMGDATA data);
+float calculate(int index, const GRAYHISTOGRAM histogram);
+void output(IMGDATA data, int clrUsed, const std::string& path);
+void outputHistogram(const IMGDATA data, const std::string& path);
 
 int main()
-{	
-	IMGDATA data = loadImage("bitmap/gray.bmp");
+{
+	std::string path;
+	std::cin >> path;
+	const IMGDATA data = loadImage(path);
 	GRAYHISTOGRAM grayhistogram = getHistogram(data);
 	grayhistogram.normalize();
-	grayhistogram.draw();
+	//grayhistogram.draw();
+	outputHistogram(data, "bitmap/_grayHistogram.bmp");
+	const IMGDATA newData = balance(grayhistogram, data);
+	//histogram.draw();
+	outputHistogram(newData, "bitmap/_afterBalance.bmp");
+	output(newData,256, "bitmap/balance.bmp");
 	system("pause");
 	return 0;
 }
 
+void outputHistogram(const IMGDATA data,const std::string& path)
+{
+	IMGDATA newData = data;
+	GRAYHISTOGRAM histogram = getHistogram(data);
 
+	// newData.fileHeader.bfType = 0x4d42;
+	// newData.fileHeader.bfReserved1 = 0;
+	// newData.fileHeader.bfReserved2 = 0;
+	newData.fileHeader.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2 + 256 * 256;
+    newData.fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2;
+ //
+	// newData.infoHeader.biSize = sizeof(BITMAPINFOHEADER);
+	// newData.infoHeader.biPlanes = 1;
+	 newData.infoHeader.biBitCount = 8;
+	 newData.infoHeader.biClrUsed = 2;
+	//newData.infoHeader.biCompression = BI_RGB;
+	newData.infoHeader.biSizeImage = 256 * 256;
+	newData.infoHeader.biHeight = 256;
+	newData.infoHeader.biWidth = 256;
+	// newData.infoHeader.biClrImportant = data.infoHeader.biClrImportant;
+	// newData.infoHeader.biXPelsPerMeter = data.infoHeader.biXPelsPerMeter;
+	// newData.infoHeader.biYPelsPerMeter = data.infoHeader.biYPelsPerMeter;
+
+	newData.pImg = new BYTE[256 * 256]{ 0 };
+
+	histogram.normalize();
+
+	 RGBQUAD white;
+	 white.rgbReserved = 0;
+	 white.rgbRed = 255;
+	 white.rgbBlue = 255;
+	 white.rgbGreen = 255;
+ 
+	 RGBQUAD black;
+	 black.rgbReserved = 0;
+	 black.rgbRed = 0;
+	 black.rgbBlue = 0;
+	 black.rgbGreen = 0;
+ 
+	 newData.rgbquad[0] = black;
+	 newData.rgbquad[1] = white;
+
+	for(int i = 0 ;i < 256;i++)
+	{		
+		int length = histogram.gray[i] * 255 * 25;
+		if (length > 255)
+			length = 255;
+		for(int j = 0;j < length;j++)
+		{
+			newData.pImg[j * 256 + i] = 1;
+		}
+	}
+
+	newData.length = 256 * 256;
+	newData.width = 256;
+	newData.height = 256;
+
+	output(newData, 2, path);
+}
+
+void output(IMGDATA data,int clrUsed,const std::string& path)
+{
+	std::ofstream out;
+	out.open(path, std::ios::out | std::ios::trunc | std::ios::binary);
+	if (!out.is_open())
+		return;
+
+	std::cout << "output " << path << "...." << std::endl;
+	out.write(reinterpret_cast<char *>(&data.fileHeader), sizeof(BITMAPFILEHEADER));
+	out.write(reinterpret_cast<char *>(&data.infoHeader), sizeof(BITMAPINFOHEADER));
+	out.write(reinterpret_cast<char *>(&data.rgbquad), clrUsed * sizeof(RGBQUAD));
+	out.write(reinterpret_cast<char *>(data.pImg), data.length);
+
+	out.close();
+}
+
+IMGDATA balance(const GRAYHISTOGRAM histogram,const IMGDATA data)
+{
+	const IMGDATA newData = data;
+	for(int i = 0;i < data.length;i++)
+	{
+		newData.pImg[i] = calculate(data.pImg[i], histogram) * 255;
+	}
+	return newData;
+}
+
+float calculate(int index, const GRAYHISTOGRAM histogram)
+{
+	float result = 0;
+	for(int i = 0;i < index + 1;i++)
+	{
+		result += histogram.gray[i];
+	}
+	if (result > 1)
+		result = 1;
+	return result;
+}
 
 GRAYHISTOGRAM getHistogram(const IMGDATA data)
 {
@@ -44,7 +154,7 @@ GRAYHISTOGRAM getHistogram(const IMGDATA data)
 	{
 		for(int j = 0;j < data.width;j++)
 		{
-			grayhistogram.gray[data.img[point++]]++;
+			grayhistogram.gray[data.pImg[point++]]++;
 		}
 
 		while (point % 4 != 0)
@@ -58,7 +168,7 @@ GRAYHISTOGRAM getHistogram(const IMGDATA data)
 
 void GrayHistogram::normalize()
 {
-	for (float& i : gray)
+	for (auto& i : gray)
 	{
 		i = i / pixelCount;
 	}
@@ -99,7 +209,7 @@ IMGDATA loadImage(const std::string& path)
 	BITMAPINFOHEADER infoHeader;
 	RGBQUAD rgbquad[256];
 
-	ifstream.read(reinterpret_cast<char*>(&fileHeader), sizeof(BITMAPFILEHEADER));
+	ifstream.read(reinterpret_cast<char *>(&fileHeader), sizeof(BITMAPFILEHEADER));
 	ifstream.read(reinterpret_cast<char *>(&infoHeader), sizeof(BITMAPINFOHEADER));
 	
 	ifstream.read(reinterpret_cast<char *>(&rgbquad), sizeof(RGBQUAD) * infoHeader.biClrUsed);
@@ -108,7 +218,13 @@ IMGDATA loadImage(const std::string& path)
 	ifstream.read(reinterpret_cast<char*>(img), infoHeader.biSizeImage);
 
 	IMGDATA imgdate;
-	imgdate.img = img;
+	imgdate.infoHeader = infoHeader;
+	imgdate.fileHeader = fileHeader;
+	for(int i = 0;i < 256;i++)
+	{
+		imgdate.rgbquad[i] = rgbquad[i];
+	}
+	imgdate.pImg = img;
 	imgdate.length = infoHeader.biSizeImage;
 	imgdate.width = infoHeader.biWidth;
 	imgdate.height = infoHeader.biHeight;

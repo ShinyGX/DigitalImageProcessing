@@ -107,7 +107,7 @@ void bitmapTo3SignalColorBitmap()
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
 
-	FILE * pfin = fopen("bitmap/n4x.bmp", "rb");
+	FILE * pfin = fopen("bitmap/1.bmp", "rb");
 	FILE * pfoutR = fopen("bitmap/r.bmp", "wb");
 	FILE * pfoutG = fopen("bitmap/g.bmp", "wb");
 	FILE * pfoutB = fopen("bitmap/b.bmp", "wb");
@@ -169,7 +169,7 @@ void bitmap2Gray()
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
 
-	FILE * pfin = fopen("bitmap/n4x.bmp", "rb");
+	FILE * pfin = fopen("bitmap/1.bmp", "rb");
 	FILE * pfout = fopen("bitmap/gray.bmp", "wb");
 	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
 	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
