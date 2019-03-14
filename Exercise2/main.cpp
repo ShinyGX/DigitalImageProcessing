@@ -26,8 +26,9 @@ private :
 
 IMGDATA loadImage(const std::string& path);
 GRAYHISTOGRAM getHistogram(IMGDATA data);
-IMGDATA balance(const GRAYHISTOGRAM histogram, const IMGDATA data);
-float calculate(int index, const GRAYHISTOGRAM histogram);
+IMGDATA balance(GRAYHISTOGRAM histogram, IMGDATA data);
+IMGDATA balance2(GRAYHISTOGRAM histogram, IMGDATA data);
+float calculate(int index, GRAYHISTOGRAM histogram);
 void output(IMGDATA data, int clrUsed, const std::string& path);
 void outputHistogram(const IMGDATA data, const std::string& path);
 
@@ -44,7 +45,7 @@ int main()
 	//histogram.draw();
 	outputHistogram(newData, "bitmap/_afterBalance.bmp");
 	output(newData,256, "bitmap/balance.bmp");
-	system("pause");
+	//system("pause");
 	return 0;
 }
 
@@ -127,10 +128,31 @@ void output(IMGDATA data,int clrUsed,const std::string& path)
 IMGDATA balance(const GRAYHISTOGRAM histogram,const IMGDATA data)
 {
 	const IMGDATA newData = data;
+	//newData.pImg = new BYTE[newData.length]{ 0 };
 	for(int i = 0;i < data.length;i++)
 	{
-		newData.pImg[i] = calculate(data.pImg[i], histogram) * 255;
+		newData.pImg[i] = static_cast<int>(calculate(data.pImg[i], histogram) * 255 + 0.5);
 	}
+	return newData;
+}
+
+IMGDATA balance2(const GRAYHISTOGRAM histogram, const IMGDATA data)
+{
+	//histogram.normalize();
+	float result[256]{0};
+	result[0] = histogram.gray[0];
+	for(int i = 1;i < 256;i++)
+	{
+		result[i] = result[i - 1] + histogram.gray[i];
+	}
+
+	const IMGDATA newData = data;
+	//newData.pImg = new BYTE[newData.length]{ 0 };
+	for(int i = 0;i < data.length;i++)
+	{
+		newData.pImg[i] = result[data.pImg[i]] * 255 + 0.5;
+	}
+
 	return newData;
 }
 
@@ -168,6 +190,9 @@ GRAYHISTOGRAM getHistogram(const IMGDATA data)
 
 void GrayHistogram::normalize()
 {
+	if (isNormalize)
+		return;
+
 	for (auto& i : gray)
 	{
 		i = i / pixelCount;

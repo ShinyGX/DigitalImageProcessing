@@ -116,7 +116,8 @@ void bitmapTo3SignalColorBitmap()
 	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
 	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
 
-	int height = infoHeader.biHeight, width = infoHeader.biWidth;
+	const int height = infoHeader.biHeight;
+	int width = infoHeader.biWidth;
 	if (infoHeader.biBitCount > 1)
 	{
 		int byteWidth = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
