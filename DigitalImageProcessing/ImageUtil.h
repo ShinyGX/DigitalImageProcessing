@@ -22,7 +22,7 @@ private:
 	bool isNormalize = false;
 }GRAYHISTOGRAM;
 
-
+int clamp(int c);
 
 
 inline void GrayHistogram::normalize()

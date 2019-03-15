@@ -3,6 +3,15 @@
 #include <iostream>
 
 
+int clamp(const int c)
+{
+	if (c > 255)
+		return 255;
+	if (c < 0)
+		return 0;
+	return c;
+}
+
 ImageUtil::ImageUtil()
 = default;
 
@@ -23,7 +32,6 @@ ImageData ImageUtil::loadImage(const std::string& path)
 
 	ifstream.read(reinterpret_cast<char *>(&fileHeader), sizeof(BITMAPFILEHEADER));
 	ifstream.read(reinterpret_cast<char *>(&infoHeader), sizeof(BITMAPINFOHEADER));
-
 	ifstream.read(reinterpret_cast<char *>(&rgbquad), sizeof(RGBQUAD) * infoHeader.biClrUsed);
 
 	BYTE *img = new BYTE[infoHeader.biSizeImage];
@@ -36,11 +44,29 @@ ImageData ImageUtil::loadImage(const std::string& path)
 	{
 		imgdate.rgbquad[i] = rgbquad[i];
 	}
-	imgdate.pImg = img;
+
+	BYTE *imgWithoutError = new BYTE[infoHeader.biWidth * infoHeader.biHeight];
+	//int byteWidth = (infoHeader.biWidth * (infoHeader.biClrUsed / 8) + 3) / 4 * 4;
+	int point = -1;
+	for(int i = 0;i < infoHeader.biHeight;i++)
+	{
+		for(int j = 0;j < infoHeader.biWidth;j++)
+		{
+			imgWithoutError[i * infoHeader.biWidth + j] = img[++point];
+		}
+
+		while (point % 4 != 0)
+			point++;
+	}
+
+	delete[] img;
+
+	imgdate.pImg = imgWithoutError;
 	imgdate.length = infoHeader.biSizeImage;
 	imgdate.width = infoHeader.biWidth;
 	imgdate.height = infoHeader.biHeight;
 
+	
 	ifstream.close();
 	return imgdate;
 }
@@ -50,15 +76,29 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	std::ofstream out;
 	out.open(path, std::ios::out | std::ios::trunc | std::ios::binary);
 	if (!out.is_open())
-		return;
+		return;	
+
+	BYTE *img = new BYTE[data.length];
+	int point = -1;
+	for(int i = 0;i < data.height;i++)
+	{
+		for(int j = 0;j < data.width;j++)
+		{
+			img[++point] = data.pImg[i * data.width + j];
+		}
+
+		while (point % 4 != 0)
+			img[++point] = 0;
+	}
 
 	std::cout << "output " << path << "...." << std::endl;
 	out.write(reinterpret_cast<char *>(&data.fileHeader), sizeof(BITMAPFILEHEADER));
 	out.write(reinterpret_cast<char *>(&data.infoHeader), sizeof(BITMAPINFOHEADER));
 	out.write(reinterpret_cast<char *>(&data.rgbquad), clrUsed * sizeof(RGBQUAD));
-	out.write(reinterpret_cast<char *>(data.pImg), data.length);
-
+	out.write(reinterpret_cast<char *>(img), data.length);
 	out.close();
+
+	
 }
 
 GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)

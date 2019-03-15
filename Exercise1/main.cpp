@@ -170,7 +170,7 @@ void bitmap2Gray()
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
 
-	FILE * pfin = fopen("bitmap/1.bmp", "rb");
+	FILE * pfin = fopen("bitmap/img1.bmp", "rb");
 	FILE * pfout = fopen("bitmap/gray.bmp", "wb");
 	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
 	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
