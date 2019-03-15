@@ -48,9 +48,9 @@ BYTE* toByte(RGB *rgb,int width,int height,int biSize,RGBTAG tag)
 				byte[point++] = 0;
 				break;
 			case ALL:
-				byte[point++] = rgb[i * width + j].r;
-				byte[point++] = rgb[i * width + j].g;
 				byte[point++] = rgb[i * width + j].b;
+				byte[point++] = rgb[i * width + j].g;
+				byte[point++] = rgb[i * width + j].r;
 				break;
 			}		
 			
