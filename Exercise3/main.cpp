@@ -9,7 +9,12 @@ IMGDATA advenage(IMGDATA data);
 IMGDATA mid(IMGDATA data);
 IMGDATA laplace(IMGDATA data);
 
+void colorful(IMGDATA data, const std::string& path);
 int getMid(int arr[9]);
+
+int getRed(int g);
+int getBlud(int g);
+int getGreen(int g);
 
 int main()
 {
@@ -23,9 +28,10 @@ int main()
 	//----------------拉普拉斯滤波----------
 	IMGDATA laplaceIMG = laplace(data);
 	ImageUtil::outputImage(laplaceIMG, 256, "bitmap/laplace_step_1.bmp");
-	laplaceIMG = (laplaceIMG * 0.5f) + (laplace1 * 1.0f);
+	laplaceIMG = data + (laplaceIMG * -1);
 	ImageUtil::outputImage(laplaceIMG, 256, "bitmap/laplace.bmp");
 	ImageUtil::outputHistogram(laplaceIMG, "bitmap/laplace_step_2.bmp");
+	colorful(data, "bitmap/colorful.bmp");
 
 	//---------------中值滤波---------------
 	IMGDATA midData = mid(data);
@@ -47,6 +53,50 @@ int main()
 	return 0;
 }
 
+
+void colorful(ImageUtil::IMGDATA data, const std::string& path)
+{
+	IMGDATA newData = data;
+	newData.infoHeader.biBitCount = 24;
+	newData.infoHeader.biClrUsed = 0;
+	newData.infoHeader.biSizeImage = ((data.width * 3 + 3) / 4 * 4) * data.height;
+	newData.fileHeader.bfOffBits = 54;
+	newData.fileHeader.bfSize = 54 + newData.infoHeader.biSizeImage;
+
+	BYTE * newImg = new BYTE[data.width * data.height * 3];
+	int point = -1;
+	for (int i = 0; i < data.height; i++)
+	{
+		for (int j = 0; j < data.width; j++)
+		{
+			//bgr
+			newImg[++point] = getBlud(data.pImg[i*data.width + j]);
+			newImg[++point] = getGreen(data.pImg[i*data.width + j]);
+			newImg[++point] = getRed(data.pImg[i*data.width + j]);
+		}
+	}
+
+	newData.pImg = newImg;
+	outputImage(newData, 0, path);
+}
+
+int getGreen(int g)
+{
+	if (g <= 130)
+		return clamp((255 / 130) * g);
+	else
+		return clamp((-2.04 * g) + 520.2);
+}
+
+int getBlud(int g)
+{
+	return clamp((-255/130) * g + 255);
+}
+
+int getRed(int g)
+{
+	return clamp(2.04 * g - 265.2);
+}
 
 
 

@@ -176,14 +176,14 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	if (!out.is_open())
 		return;	
 
-	BYTE *img = new BYTE[data.length];
+	BYTE *img = new BYTE[data.infoHeader.biSizeImage];
 	int byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
 	int point = -1;
 	for(int i = 0;i < data.height;i++)
 	{
 		for(int j = 0;j < byteWidth;j++)
 		{
-			img[++point] = data.pImg[i * data.width + j];
+			img[++point] = data.pImg[i * byteWidth + j];
 		}
 
 		while (point % 4 != 0)
@@ -194,10 +194,10 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	out.write(reinterpret_cast<char *>(&data.fileHeader), sizeof(BITMAPFILEHEADER));
 	out.write(reinterpret_cast<char *>(&data.infoHeader), sizeof(BITMAPINFOHEADER));
 	out.write(reinterpret_cast<char *>(&data.rgbquad), clrUsed * sizeof(RGBQUAD));
-	out.write(reinterpret_cast<char *>(img), data.length);
+	out.write(reinterpret_cast<char *>(img), data.infoHeader.biSizeImage);
 	out.close();
 
-	
+	//delete[] img;
 }
 
 ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
