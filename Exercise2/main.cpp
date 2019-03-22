@@ -13,6 +13,7 @@
 // 	int width, height;
 // }IMGDATA;
 
+using namespace ImageUtil;
 
 
 IMGDATA balance(GRAYHISTOGRAM histogram, IMGDATA data);

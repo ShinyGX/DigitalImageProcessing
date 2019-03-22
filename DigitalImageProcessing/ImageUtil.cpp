@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-int clamp(const int c)
+int ImageUtil::clamp(const int c)
 {
 	if (c > 255)
 		return 255;
@@ -12,14 +12,8 @@ int clamp(const int c)
 	return c;
 }
 
-ImageUtil::ImageUtil()
-= default;
 
-
-ImageUtil::~ImageUtil()
-= default;
-
-ImageData ImageUtil::loadImage(const std::string& path)
+ImageUtil::ImageData ImageUtil::loadImage(const std::string& path)
 {
 	std::ifstream ifstream;
 	ifstream.open(path, std::ios::binary);
@@ -45,14 +39,14 @@ ImageData ImageUtil::loadImage(const std::string& path)
 		imgdate.rgbquad[i] = rgbquad[i];
 	}
 
-	BYTE *imgWithoutError = new BYTE[infoHeader.biWidth * infoHeader.biHeight];
+	BYTE *imgWithoutError = new BYTE[(infoHeader.biWidth * infoHeader.biBitCount / 8) * infoHeader.biHeight];
 	//int byteWidth = (infoHeader.biWidth * (infoHeader.biClrUsed / 8) + 3) / 4 * 4;
 	int point = -1;
 	for(int i = 0;i < infoHeader.biHeight;i++)
 	{
-		for(int j = 0;j < infoHeader.biWidth;j++)
+		for(int j = 0;j < (infoHeader.biWidth * infoHeader.biBitCount / 8);j++)
 		{
-			imgWithoutError[i * infoHeader.biWidth + j] = img[++point];
+			imgWithoutError[i * (infoHeader.biWidth * infoHeader.biBitCount / 8) + j] = img[++point];
 		}
 
 		while (point % 4 != 0)
@@ -71,6 +65,110 @@ ImageData ImageUtil::loadImage(const std::string& path)
 	return imgdate;
 }
 
+ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
+{
+	ImageData data = loadImage(path);
+	if (data.infoHeader.biBitCount != 8)
+	{
+		RGBA *rgba = new RGBA[data.width * data.height];
+		switch (static_cast<int>(data.infoHeader.biBitCount))
+		{
+		case 16:
+			std::cout << "无法转换16位图(太麻烦，懒癌发作)" << std::endl;
+			break;
+		case 24:
+		{
+			int point = 0;
+			for (int i = 0; i < data.height; i++)
+			{
+				for (int j = 0; j < data.width; j++)
+				{
+					rgba[i * data.width + j].b = data.pImg[point++];
+					rgba[i * data.width + j].g = data.pImg[point++];
+					rgba[i * data.width + j].r = data.pImg[point++];
+				}
+			}
+			data.infoHeader.biBitCount = 8;
+			data.infoHeader.biClrUsed = 256;
+
+			data.fileHeader.bfOffBits = 54 + 4 * 256;
+			int byteLine = (data.width * data.infoHeader.biBitCount / 8 + 3) / 4 * 4;
+			data.infoHeader.biSizeImage = byteLine * data.height;
+			data.fileHeader.bfSize = 54 + byteLine * data.height + 4 * 256;
+
+			for (int i = 0; i < 256; i++)
+			{
+				data.rgbquad[i].rgbRed = i;
+				data.rgbquad[i].rgbGreen = i;
+				data.rgbquad[i].rgbBlue = i;
+				data.rgbquad[i].rgbReserved = 0;
+
+			}
+
+			BYTE * newData = new BYTE[data.width * data.height];
+			point = 0;
+			for (int i = 0; i < data.height; i++)
+			{
+				for (int j = 0; j < data.width; j++)
+				{
+					newData[point++] = rgba[i * data.width + j].r * 0.299 + rgba[i * data.width + j].g * 0.587 + rgba[i * data.width + j].b * 0.114;
+				}
+			}
+
+			delete[] data.pImg;
+			data.pImg = newData;
+			break;
+		}
+		case 32:
+		{
+			int point = 0;
+			for (int i = 0; i < data.height; i++)
+			{
+				for (int j = 0; j < data.width; j++)
+				{
+					rgba[i * data.width + j].b = data.pImg[point++];
+					rgba[i * data.width + j].g = data.pImg[point++];
+					rgba[i * data.width + j].r = data.pImg[point++];
+					rgba[i * data.width + j].a = data.pImg[point++];
+				}
+			}
+			data.infoHeader.biBitCount = 8;
+			data.infoHeader.biClrUsed = 256;
+
+			data.fileHeader.bfOffBits = 54 + 4 * 256;
+			int byteLine = (data.width * data.infoHeader.biBitCount / 8 + 3) / 4 * 4;
+			data.infoHeader.biSizeImage = byteLine * data.height;
+			data.fileHeader.bfSize = 54 + byteLine * data.height + 4 * 256;
+
+			for (int i = 0; i < 256; i++)
+			{
+				data.rgbquad[i].rgbRed = i;
+				data.rgbquad[i].rgbGreen = i;
+				data.rgbquad[i].rgbBlue = i;
+				data.rgbquad[i].rgbReserved = 0;
+
+			}
+
+			BYTE * newData = new BYTE[data.width * data.height];
+			point = 0;
+			for (int i = 0; i < data.height; i++)
+			{
+				for (int j = 0; j < data.width; j++)
+				{
+					newData[point++] = rgba[i * data.width + j].r * 0.299 + rgba[i * data.width + j].g * 0.587 + rgba[i * data.width + j].b * 0.114;
+				}
+			}
+
+			delete[] data.pImg;
+			data.pImg = newData;
+			break;
+		}
+		}
+	}
+
+	return data;
+}
+
 void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string& path)
 {
 	std::ofstream out;
@@ -79,10 +177,11 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 		return;	
 
 	BYTE *img = new BYTE[data.length];
+	int byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
 	int point = -1;
 	for(int i = 0;i < data.height;i++)
 	{
-		for(int j = 0;j < data.width;j++)
+		for(int j = 0;j < byteWidth;j++)
 		{
 			img[++point] = data.pImg[i * data.width + j];
 		}
@@ -101,7 +200,7 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	
 }
 
-GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
+ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
 {
 	GRAYHISTOGRAM grayhistogram;
 	int point = 0;
@@ -111,9 +210,6 @@ GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
 		{
 			grayhistogram.gray[data.pImg[point++]]++;
 		}
-
-		while (point % 4 != 0)
-			point++;
 	}
 
 	grayhistogram.pixelCount = data.width * data.height;
@@ -178,4 +274,33 @@ void ImageUtil::outputHistogram(const IMGDATA data, const std::string& path)
 	newData.height = 256;
 
 	outputImage(newData, 2, path);
+}
+
+
+
+ImageUtil::ImageData & ImageUtil::ImageData::operator+(ImageData& d0)
+{
+	for(int i = 0;i < height;i++)
+	{
+		for(int j = 0;j < width;j++)
+		{
+			pImg[i * width + j] = ImageUtil::clamp(pImg[i * width + j] + d0.pImg[i * width + j]);
+		}
+	}
+
+	return *this;
+
+}
+
+ImageUtil::ImageData & ImageUtil::ImageData::operator*(const float k)
+{
+	for(int i =0;i < height;i++)
+	{
+		for(int j = 0;j < width;j++)
+		{
+			pImg[i * width + j] = ImageUtil::clamp(pImg[i * width + j] * k);
+		}
+	}
+
+	return *this;
 }
