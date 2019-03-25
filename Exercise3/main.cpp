@@ -31,6 +31,8 @@ int main()
 	laplaceIMG = data + (laplaceIMG * -1);
 	ImageUtil::outputImage(laplaceIMG, 256, "bitmap/laplace.bmp");
 	ImageUtil::outputHistogram(laplaceIMG, "bitmap/laplace_step_2.bmp");
+
+	//---------------伪彩色化--------------
 	colorful(data, "bitmap/colorful.bmp");
 
 	//---------------中值滤波---------------

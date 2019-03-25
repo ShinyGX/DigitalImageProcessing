@@ -1,6 +1,7 @@
 #include "ImageUtil.h"
 #include <fstream>
 #include <iostream>
+#include <cassert>
 
 
 int ImageUtil::clamp(const int c)
@@ -49,14 +50,14 @@ ImageUtil::ImageData ImageUtil::loadImage(const std::string& path)
 			imgWithoutError[i * (infoHeader.biWidth * infoHeader.biBitCount / 8) + j] = img[++point];
 		}
 
-		while (point % 4 != 0)
+		while ((point + 1) % 4 != 0)
 			point++;
 	}
 
 	delete[] img;
 
 	imgdate.pImg = imgWithoutError;
-	imgdate.length = infoHeader.biSizeImage;
+	imgdate.length = infoHeader.biWidth * infoHeader.biHeight * infoHeader.biBitCount / 8;
 	imgdate.width = infoHeader.biWidth;
 	imgdate.height = infoHeader.biHeight;
 
@@ -163,8 +164,13 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 			data.pImg = newData;
 			break;
 		}
+		default:
+			break;
 		}
+
+		delete[] rgba;
 	}
+	
 
 	return data;
 }
@@ -186,7 +192,7 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 			img[++point] = data.pImg[i * byteWidth + j];
 		}
 
-		while (point % 4 != 0)
+		while ((point + 1) % 4 != 0)
 			img[++point] = 0;
 	}
 
@@ -197,7 +203,7 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	out.write(reinterpret_cast<char *>(img), data.infoHeader.biSizeImage);
 	out.close();
 
-	//delete[] img;
+	delete[] img;
 }
 
 ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
@@ -240,6 +246,10 @@ void ImageUtil::outputHistogram(const IMGDATA data, const std::string& path)
 	// newData.infoHeader.biYPelsPerMeter = data.infoHeader.biYPelsPerMeter;
 
 	newData.pImg = new BYTE[256 * 256];
+	for(int i = 0;i < 256 * 256;i++)
+	{
+		newData.pImg[i] = 0;
+	}
 
 	histogram.normalize();
 
