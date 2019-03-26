@@ -52,6 +52,7 @@ namespace ImageUtil
 	ImageData loadImage(const std::string& path);
 	ImageData loadImageToGray(const std::string& path);
 	void outputImage(ImageData data, int clrUsed, const std::string&path);
+	void outputImage(ImageData data, const std::string&path);
 	GRAYHISTOGRAM getHistogram(IMGDATA data);
 	void outputHistogram(IMGDATA data, const std::string& path);
 

@@ -1,5 +1,7 @@
 #define __DEBUG
 
+#define PI 3.1415926
+
 #ifdef __DEBUG
 #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
 
@@ -12,25 +14,32 @@
 
 #include "../DigitalImageProcessing/ImageUtil.h"
 #include <iostream>
+#include <valarray>
 
 using ImageUtil::IMGDATA;
 
 IMGDATA mirror(IMGDATA data);
 IMGDATA scale(IMGDATA data);
+IMGDATA rotate(IMGDATA data);
+IMGDATA translate(IMGDATA data);
 
 int main()
 {
 	std::string path;
 	std::cin >> path;
 	IMGDATA data = ImageUtil::loadImage(path);
-	IMGDATA mirrorIMG = mirror(data), scaleIMG = scale(data);
+	IMGDATA mirrorIMG = mirror(data), scaleIMG = scale(data),rotateImg = rotate(data),transImg = translate(data);
 
-	ImageUtil::outputImage(mirrorIMG, 0, "bitmap/mirror.bmp");
-	ImageUtil::outputImage(scaleIMG, 0, "bitmap/scale.bmp");
+	ImageUtil::outputImage(mirrorIMG,"bitmap/mirror.bmp");
+	ImageUtil::outputImage(scaleIMG, "bitmap/scale.bmp");
+	ImageUtil::outputImage(rotateImg, "bitmap/rotate.bmp");
+	ImageUtil::outputImage(transImg, "bitmap/translate.bmp");
 
 	delete[] data.pImg;
 	delete[] mirrorIMG.pImg;
 	delete[] scaleIMG.pImg;
+	delete[] rotateImg.pImg;
+	delete[] transImg.pImg;
 
 #ifdef __DEBUG
 	 _CrtDumpMemoryLeaks();
@@ -39,6 +48,95 @@ int main()
 	
 	return 0;
 }
+
+IMGDATA rotate(IMGDATA data)
+{
+	int rotateAngle;
+	std::cout << "旋转的角度" << std::endl;
+	std::cin >> rotateAngle;
+
+	int k = data.infoHeader.biBitCount / 8;
+
+	BYTE *newData = new BYTE[data.width * data.height * k];
+	for(int i =0;i < data.width * data.height * k;i++)
+	{
+		newData[i] = 0;
+	}
+
+	//弧度制的角度
+	double angle = 1.0 * rotateAngle * PI / 180;
+	int point = -k;
+	int midY = static_cast<float>(data.height) / 2, midX = static_cast<float>(data.width) / 2;
+	for (int i = 0; i < data.height; i++)
+	{
+		for (int j = 0; j < data.width; j++)
+		{
+			int aftX = j - midX;
+			int aftY = i - midY;
+			int x = (aftX * std::cos(angle) + aftY * std::sin(angle)) + midX;
+			int y = (-aftX * std::sin(angle) + aftY * std::cos(angle)) + midY;
+
+
+			point += k;
+			if (x < 0 || x >= data.width || y < 0 || y >= data.height)
+				continue;
+
+			for(int biCount = 0;biCount < k;biCount++)
+			{
+				newData[point + biCount] = data.pImg[y * data.width * k + x * k + biCount];
+			}
+
+		}
+	}
+
+	IMGDATA img = data;
+	img.pImg = newData;
+
+	return img;
+}
+
+
+IMGDATA translate(IMGDATA data)
+{
+	int xTrans, yTrans;
+	std::cout << "x轴的位移" << std::endl;
+	std::cin >> xTrans;
+	std::cout << "y轴的位移" << std::endl;
+	std::cin >> yTrans;
+
+	int k = data.infoHeader.biBitCount / 8;
+
+	BYTE *newData = new BYTE[data.width * data.height * k];
+	for (int i = 0; i < data.width * data.height * k; i++)
+	{
+		newData[i] = 0;
+	}
+
+	int point = -k;
+	for(int i = 0;i < data.height;i++)
+	{
+		for(int j = 0;j < data.width;j++)
+		{
+
+			int x = j + xTrans;
+			int y = i + yTrans;
+
+			point += k;
+			if (x < 0 || x >= data.width || y < 0 || y >= data.height)
+				continue;
+
+			for(int biCount = 0;biCount < k;biCount++)
+			{
+				newData[point + biCount] = data.pImg[y * data.width * k + x * k + biCount];
+			}
+		}
+	}
+
+	IMGDATA img = data;
+	img.pImg = newData;
+	return img;
+}
+
 
 ImageUtil::IMGDATA scale(ImageUtil::IMGDATA data)
 {
@@ -59,7 +157,7 @@ ImageUtil::IMGDATA scale(ImageUtil::IMGDATA data)
 
 	const int byteWidth = (newImg.width * k + 3) / 4 * 4;
 	newImg.infoHeader.biSizeImage = byteWidth * newImg.height;
-	newImg.fileHeader.bfSize = newImg.infoHeader.biSizeImage + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER);
+	newImg.fileHeader.bfSize = newImg.infoHeader.biSizeImage + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + newImg.infoHeader.biClrUsed * sizeof(RGBQUAD);
 
 
 

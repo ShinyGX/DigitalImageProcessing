@@ -206,6 +206,11 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	delete[] img;
 }
 
+void ImageUtil::outputImage(ImageData data, const std::string& path)
+{
+	outputImage(data, data.infoHeader.biClrUsed, path);
+}
+
 ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
 {
 	GRAYHISTOGRAM grayhistogram;
