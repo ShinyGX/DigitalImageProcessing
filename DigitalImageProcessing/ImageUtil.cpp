@@ -179,11 +179,11 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 {
 	std::ofstream out;
 	out.open(path, std::ios::out | std::ios::trunc | std::ios::binary);
-	if (!out.is_open())
+	if (!out || !out.is_open())
 		return;	
 
 	BYTE *img = new BYTE[data.infoHeader.biSizeImage];
-	int byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
+	const int byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
 	int point = -1;
 	for(int i = 0;i < data.height;i++)
 	{
