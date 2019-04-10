@@ -211,6 +211,36 @@ void ImageUtil::outputImage(ImageData data, const std::string& path)
 	outputImage(data, data.infoHeader.biClrUsed, path);
 }
 
+void ImageUtil::outputBlackWhiteImage(ImageData data, const std::string& path)
+{
+	RGBQUAD white;
+	white.rgbReserved = 0;
+	white.rgbRed = 255;
+	white.rgbBlue = 255;
+	white.rgbGreen = 255;
+
+	RGBQUAD black;
+	black.rgbReserved = 0;
+	black.rgbRed = 0;
+	black.rgbBlue = 0;
+	black.rgbGreen = 0;
+
+	data.fileHeader.bfOffBits = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + sizeof(RGBQUAD) * 2;
+	data.fileHeader.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + sizeof(RGBQUAD) * 2 + data.infoHeader.biSizeImage;
+
+	data.infoHeader.biClrUsed = 2;
+
+	data.rgbquad[0] = black;
+	data.rgbquad[1] = white;
+
+	for(int i = 0;i < data.width *data.height;i++)
+	{
+		data.pImg[i] = data.pImg[i] > 0 ? 1 : 0;
+	}
+
+	outputImage(data, 2, path);
+}
+
 ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
 {
 	GRAYHISTOGRAM grayhistogram;
