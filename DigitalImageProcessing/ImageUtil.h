@@ -17,7 +17,7 @@ namespace ImageUtil
 		BYTE * pImg;
 		int length;
 		int width, height;
-
+		//std::shared_ptr<BYTE*> pImg;
 		ImageData& operator+(ImageData& d0);
 		ImageData& operator*(float k);
 

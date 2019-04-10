@@ -18,9 +18,21 @@
     <ClInclude Include="ImageUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Ftt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ftt_C.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Ftt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

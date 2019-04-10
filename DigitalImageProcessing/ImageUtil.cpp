@@ -55,7 +55,7 @@ ImageUtil::ImageData ImageUtil::loadImage(const std::string& path)
 	}
 
 	delete[] img;
-
+	
 	imgdate.pImg = imgWithoutError;
 	imgdate.length = infoHeader.biWidth * infoHeader.biHeight * infoHeader.biBitCount / 8;
 	imgdate.width = infoHeader.biWidth;
