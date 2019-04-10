@@ -12,6 +12,7 @@ void otsu(const ImageUtil::ImageData& data);
 double otsuP(int k, const ImageUtil::GrayHistogram& histogram);
 double otsuM(int k, const ImageUtil::GrayHistogram& histogram);
 double otsuVariance(int k, double mG, const ImageUtil::GrayHistogram& histogram);
+void laplaceOstu(const ImageUtil::IMGDATA& data);
 
 int main()
 {
@@ -22,8 +23,123 @@ int main()
 	ImageUtil::outputHistogram(img, "bitmap/histogram.bmp");
 	//thresholdByGive(img);
 	thresholdByIterate(img);
+	laplaceOstu(img);
 	otsu(img);
 	return 0;
+}
+void laplaceOstu(const ImageUtil::IMGDATA& data)
+{
+	BYTE * newData = new BYTE[data.length];
+
+	for (int i = 0; i < data.height; i++)
+	{
+		for (int j = 0; j < data.width; j++)
+		{
+			int up, down, left, right;
+			if (i == 0)
+				up = 0;
+			else
+				up = i - 1;
+
+			if (i == data.height - 1)
+				down = data.height - 1;
+			else
+				down = i + 1;
+
+			if (j == 0)
+				left = 0;
+			else
+				left = j - 1;
+
+			if (j == data.width - 1)
+				right = data.width - 1;
+			else
+				right = j + 1;
+
+			newData[i * data.width + j] = ImageUtil::clamp(
+				1 * data.pImg[up * data.width + left] + 1 * data.pImg[up * data.width + j] + 1 * data.pImg[up * data.width + right] +
+				1 * data.pImg[i * data.width + left] + -8 * data.pImg[i * data.width + j] + 1 * data.pImg[i * data.width + right] +
+				1 * data.pImg[down * data.width + left] + 1 * data.pImg[down * data.width + j] + 1 * data.pImg[down * data.width + right]);
+		}
+
+	}
+
+	for(int i = 0;i < data.width * data.height;i++)
+	{
+		newData[i] = newData[i] > 150 ? 1 : 0;
+	}
+
+	ImageUtil::IMGDATA imgData = data;
+	imgData.pImg = newData;
+
+	ImageUtil::GRAYHISTOGRAM grayhistogram;
+	grayhistogram.pixelCount = 0;
+	int point = 0;
+	for (int i = 0; i < data.height; i++)
+	{
+		for (int j = 0; j < data.width; j++)
+		{
+			if(newData[i] == 1)
+			{
+				grayhistogram.gray[data.pImg[point++]]++;
+				grayhistogram.pixelCount++;
+			}
+			
+		}
+	}
+	grayhistogram.normalize();
+	ImageUtil::outputHistogram(imgData, "bitmap/laplace_histogram.bmp");
+	const int len = 255;
+
+	const double mG = otsuM(len, grayhistogram);
+	double delta[len];
+	for (int i = 0; i < len; i++)
+	{
+		delta[i] = otsuVariance(i, mG, grayhistogram);
+	}
+
+	double max = -1;
+	for (double i : delta)
+	{
+		if (i > max)
+		{
+			max = i;
+		}
+	}
+
+	std::vector<int> maxList;
+	for (int i = 0; i < len; i++)
+	{
+		if (delta[i] == max)
+			maxList.push_back(i);
+	}
+
+	int k = 0;
+	for (int i : maxList)
+	{
+		k += i;
+	}
+
+	k /= maxList.size();
+
+	ImageUtil::ImageData img = data;
+	BYTE *mg = new BYTE[data.width * data.height];
+	for (int i = 0; i < data.width * data.height; i++)
+	{
+		mg[i] = data.pImg[i] > k ? 1 : 0;
+	}
+	
+	std::string name("bitmap/threshold_by_laplace_otsu");
+	name.append("_")
+		.append(std::to_string(k))
+		.append(".bmp");
+
+	img.pImg = mg;
+	ImageUtil::outputBlackWhiteImage(img, name);
+
+	delete[] imgData.pImg;
+	delete[] mg;
+
 }
 
 void otsu(const ImageUtil::ImageData& data)

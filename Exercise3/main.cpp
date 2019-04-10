@@ -7,7 +7,7 @@ using namespace ImageUtil;
 
 IMGDATA advenage(IMGDATA data);
 IMGDATA mid(IMGDATA data);
-IMGDATA laplace(IMGDATA data);
+IMGDATA laplaceOstu(IMGDATA data);
 
 void colorful(IMGDATA data, const std::string& path);
 int getMid(int arr[9]);
@@ -26,7 +26,7 @@ int main()
 
 
 	//----------------À­ÆÕÀ­Ë¹ÂË²¨----------
-	IMGDATA laplaceIMG = laplace(data);
+	IMGDATA laplaceIMG = laplaceOstu(data);
 	ImageUtil::outputImage(laplaceIMG, 256, "bitmap/laplace_step_1.bmp");
 	laplaceIMG = data + (laplaceIMG * -1);
 	ImageUtil::outputImage(laplaceIMG, 256, "bitmap/laplace.bmp");
@@ -102,7 +102,7 @@ int getRed(int g)
 
 
 
-IMGDATA laplace(IMGDATA data)
+IMGDATA laplaceOstu(IMGDATA data)
 {
 	BYTE * newData = new BYTE[data.length];
 
