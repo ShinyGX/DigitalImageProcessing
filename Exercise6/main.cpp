@@ -74,21 +74,22 @@ void laplaceOstu(const ImageUtil::IMGDATA& data)
 
 	ImageUtil::GRAYHISTOGRAM grayhistogram;
 	grayhistogram.pixelCount = 0;
-	int point = 0;
+	int point = -1;
 	for (int i = 0; i < data.height; i++)
 	{
 		for (int j = 0; j < data.width; j++)
 		{
-			if(newData[i] == 1)
+			
+			if(newData[++point] == 1)
 			{
-				grayhistogram.gray[data.pImg[point++]]++;
+				grayhistogram.gray[data.pImg[point]]++;
 				grayhistogram.pixelCount++;
 			}
 			
 		}
 	}
 	grayhistogram.normalize();
-	ImageUtil::outputHistogram(imgData, "bitmap/laplace_histogram.bmp");
+	ImageUtil::outputHistogram(grayhistogram, "bitmap/laplace_histogram.bmp");
 	const int len = 255;
 
 	const double mG = otsuM(len, grayhistogram);
@@ -137,7 +138,7 @@ void laplaceOstu(const ImageUtil::IMGDATA& data)
 	img.pImg = mg;
 	ImageUtil::outputBlackWhiteImage(img, name);
 
-	delete[] imgData.pImg;
+	delete[] newData;
 	delete[] mg;
 
 }

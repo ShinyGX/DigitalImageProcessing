@@ -93,7 +93,7 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 			data.infoHeader.biClrUsed = 256;
 
 			data.fileHeader.bfOffBits = 54 + 4 * 256;
-			int byteLine = (data.width * data.infoHeader.biBitCount / 8 + 3) / 4 * 4;
+			const int byteLine = (data.width * data.infoHeader.biBitCount / 8 + 3) / 4 * 4;
 			data.infoHeader.biSizeImage = byteLine * data.height;
 			data.fileHeader.bfSize = 54 + byteLine * data.height + 4 * 256;
 
@@ -137,7 +137,7 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 			data.infoHeader.biClrUsed = 256;
 
 			data.fileHeader.bfOffBits = 54 + 4 * 256;
-			int byteLine = (data.width * data.infoHeader.biBitCount / 8 + 3) / 4 * 4;
+			const int byteLine = (data.width * data.infoHeader.biBitCount / 8 + 3) / 4 * 4;
 			data.infoHeader.biSizeImage = byteLine * data.height;
 			data.fileHeader.bfSize = 54 + byteLine * data.height + 4 * 256;
 
@@ -206,7 +206,7 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	delete[] img;
 }
 
-void ImageUtil::outputImage(ImageData data, const std::string& path)
+void ImageUtil::outputImage(const ImageData& data, const std::string& path)
 {
 	outputImage(data, data.infoHeader.biClrUsed, path);
 }
@@ -241,7 +241,7 @@ void ImageUtil::outputBlackWhiteImage(ImageData data, const std::string& path)
 	outputImage(data, 2, path);
 }
 
-ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
+ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA& data)
 {
 	GRAYHISTOGRAM grayhistogram;
 	int point = 0;
@@ -257,36 +257,100 @@ ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA data)
 	return grayhistogram;
 }
 
-void ImageUtil::outputHistogram(const IMGDATA data, const std::string& path)
+void ImageUtil::outputHistogram(const IMGDATA& data, const std::string& path)
 {
-	IMGDATA newData = data;
-	GRAYHISTOGRAM histogram = ImageUtil::getHistogram(data);
+	outputHistogram(ImageUtil::getHistogram(data), path);
 
-	// newData.fileHeader.bfType = 0x4d42;
-	// newData.fileHeader.bfReserved1 = 0;
-	// newData.fileHeader.bfReserved2 = 0;
-	newData.fileHeader.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2 + 256 * 256;
-	newData.fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2;
+	// IMGDATA newData = data;
+	// GRAYHISTOGRAM histogram = ImageUtil::getHistogram(data);
 	//
-	   // newData.infoHeader.biSize = sizeof(BITMAPINFOHEADER);
-	   // newData.infoHeader.biPlanes = 1;
-	newData.infoHeader.biBitCount = 8;
-	newData.infoHeader.biClrUsed = 2;
-	//newData.infoHeader.biCompression = BI_RGB;
-	newData.infoHeader.biSizeImage = 256 * 256;
-	newData.infoHeader.biHeight = 256;
-	newData.infoHeader.biWidth = 256;
-	// newData.infoHeader.biClrImportant = data.infoHeader.biClrImportant;
-	// newData.infoHeader.biXPelsPerMeter = data.infoHeader.biXPelsPerMeter;
-	// newData.infoHeader.biYPelsPerMeter = data.infoHeader.biYPelsPerMeter;
+	//  // newData.fileHeader.bfType = 0x4d42;
+	//  // newData.fileHeader.bfReserved1 = 0;
+	//  // newData.fileHeader.bfReserved2 = 0;
+	//  newData.fileHeader.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2 + 256 * 256;
+	//  newData.fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2;
+	//  //
+	//     // newData.infoHeader.biSize = sizeof(BITMAPINFOHEADER);
+	//     // newData.infoHeader.biPlanes = 1;
+	//  newData.infoHeader.biBitCount = 8;
+	//  newData.infoHeader.biClrUsed = 2;
+	//  //newData.infoHeader.biCompression = BI_RGB;
+	//  newData.infoHeader.biSizeImage = 256 * 256;
+	//  newData.infoHeader.biHeight = 256;
+	//  newData.infoHeader.biWidth = 256;
+	//  // newData.infoHeader.biClrImportant = data.infoHeader.biClrImportant;
+	//  // newData.infoHeader.biXPelsPerMeter = data.infoHeader.biXPelsPerMeter;
+	//  // newData.infoHeader.biYPelsPerMeter = data.infoHeader.biYPelsPerMeter;
+ //
+	//  newData.pImg = new BYTE[256 * 256];
+	//  for(int i = 0;i < 256 * 256;i++)
+	//  {
+	//  	newData.pImg[i] = 0;
+	//  }
+ //
+	//  histogram.normalize();
+ //
+	//  RGBQUAD white;
+	//  white.rgbReserved = 0;
+	//  white.rgbRed = 255;
+	//  white.rgbBlue = 255;
+	//  white.rgbGreen = 255;
+ //
+	//  RGBQUAD black;
+	//  black.rgbReserved = 0;
+	//  black.rgbRed = 0;
+	//  black.rgbBlue = 0;
+	//  black.rgbGreen = 0;
+ //
+	//  newData.rgbquad[0] = black;
+	//  newData.rgbquad[1] = white;
+ //
+	//  double max = -1;
+	//  for (double i : histogram.gray)
+	//  {
+	//  	if (i > max)
+	//  		max = i;
+	//  }
+ //
+	//  for (int i = 0; i < 256; i++)
+	//  {
+	//  	int length = histogram.gray[i] * 255 * (100 / (100 * max));
+	//  	if (length > 255)
+	//  		length = 255;
+	//  	for (int j = 0; j < length; j++)
+	//  	{
+	//  		newData.pImg[j * 256 + i] = 1;
+	//  	}
+	//  }
+ //
+	//  newData.length = 256 * 256;
+	//  newData.width = 256;
+	//  newData.height = 256;
+ //
+	//  outputImage(newData, 2, path);
+}
 
-	newData.pImg = new BYTE[256 * 256];
-	for(int i = 0;i < 256 * 256;i++)
-	{
-		newData.pImg[i] = 0;
-	}
+void ImageUtil::outputHistogram(const GrayHistogram& histogram, const std::string& path)
+{
+	BITMAPFILEHEADER header;
+	header.bfType = 0x4d42;
+	header.bfReserved1 = 0;
+	header.bfReserved2 = 0;
+	header.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2 + 256 * 256;
+	header.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * 2;
 
-	histogram.normalize();
+	BITMAPINFOHEADER info;
+	info.biSize = sizeof(BITMAPINFOHEADER);
+	info.biWidth = 256;
+	info.biHeight = 256;
+	info.biPlanes = 1;
+	info.biBitCount = 8;
+	info.biClrUsed = 2;
+	info.biClrImportant = 0;
+	info.biCompression = 0;
+	info.biSizeImage = 256 * 256;
+	info.biXPelsPerMeter = 0;
+	info.biYPelsPerMeter = 0;
 
 	RGBQUAD white;
 	white.rgbReserved = 0;
@@ -300,27 +364,43 @@ void ImageUtil::outputHistogram(const IMGDATA data, const std::string& path)
 	black.rgbBlue = 0;
 	black.rgbGreen = 0;
 
-	newData.rgbquad[0] = black;
-	newData.rgbquad[1] = white;
+	BYTE *imgData = new BYTE[256 * 256];
+
+	GrayHistogram grayHistogram = histogram;
+	grayHistogram.normalize();
+
+	double max = -1;
+	for (double i : grayHistogram.gray)
+	{
+		if (i > max)
+			max = i;
+	}
 
 	for (int i = 0; i < 256; i++)
 	{
-		int length = histogram.gray[i] * 255 * 20;
+		int length = grayHistogram.gray[i] * 255 * (100 / (100 * max));
 		if (length > 255)
 			length = 255;
 		for (int j = 0; j < length; j++)
 		{
-			newData.pImg[j * 256 + i] = 1;
+			imgData[j * 256 + i] = 1;
 		}
 	}
 
-	newData.length = 256 * 256;
-	newData.width = 256;
-	newData.height = 256;
+	IMGDATA img;
+	img.fileHeader = header;
+	img.infoHeader = info;
+	img.rgbquad[0] = black;
+	img.rgbquad[1] = white;
+	img.pImg = imgData;
+	img.width = 256;
+	img.height = 256;
+	img.length = 256 * 256;
 
-	outputImage(newData, 2, path);
+	outputImage(img, path);
+
+	delete[] imgData;
 }
-
 
 
 ImageUtil::ImageData & ImageUtil::ImageData::operator+(ImageData& d0)
