@@ -5,10 +5,9 @@
 namespace ImageUtil
 {
 
-	typedef struct ImageColor{
+	typedef struct ImageColor {
 		BYTE r, g, b, a;
 	}RGBA;
-
 	typedef struct ImageData
 	{
 		BITMAPFILEHEADER fileHeader;
@@ -22,7 +21,6 @@ namespace ImageUtil
 		ImageData& operator*(float k);
 
 	}IMGDATA;
-
 	typedef struct GrayHistogram
 	{
 		double gray[256] = { 0 };
@@ -32,9 +30,6 @@ namespace ImageUtil
 	private:
 		bool isNormalize = false;
 	}GRAYHISTOGRAM;
-
-
-
 
 	inline void GrayHistogram::normalize()
 	{
@@ -57,7 +52,7 @@ namespace ImageUtil
 	GRAYHISTOGRAM getHistogram(const IMGDATA& data);
 	void outputHistogram(const IMGDATA& data, const std::string& path);
 	void outputHistogram(const GrayHistogram& histogram, const std::string&path);
-
+	void outputHistogram(const GrayHistogram& histogram, const std::string&path, int mark);
 
 	int clamp(int c);
 }

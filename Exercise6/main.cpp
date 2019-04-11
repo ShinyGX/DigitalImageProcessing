@@ -137,7 +137,7 @@ void laplaceOstu(const ImageUtil::IMGDATA& data)
 
 	img.pImg = mg;
 	ImageUtil::outputBlackWhiteImage(img, name);
-
+	ImageUtil::outputHistogram(ImageUtil::getHistogram(data), "bitmap/histogram/threshold_by_laplace_otsu_h.bmp", k);
 	delete[] newData;
 	delete[] mg;
 
@@ -195,6 +195,7 @@ void otsu(const ImageUtil::ImageData& data)
 
 	img.pImg = imgData;
 	ImageUtil::outputBlackWhiteImage(img, name);
+	ImageUtil::outputHistogram(histogram, "bitmap/histogram/threshold_by_otsu_h.bmp", k);
 }
 
 double otsuVariance(const int k, const double mG,const ImageUtil::GrayHistogram& histogram)
@@ -271,6 +272,7 @@ void thresholdByIterate(const ImageUtil::ImageData& data)
 
 	img.pImg = imgData;
 	ImageUtil::outputBlackWhiteImage(img, name);
+	ImageUtil::outputHistogram(histogram, "bitmap/histogram/threshold_by_iter_h.bmp", t1);
 
 	delete[] imgData;
 }
