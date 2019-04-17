@@ -389,3 +389,8 @@ ImageUtil::ImageData & ImageUtil::ImageData::operator*(const float k)
 
 	return *this;
 }
+
+BYTE* ImageUtil::ImageData::operator[](const int i) const
+{
+	return &pImg[i * width];
+}

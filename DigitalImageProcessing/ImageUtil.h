@@ -20,6 +20,8 @@ namespace ImageUtil
 		ImageData& operator+(ImageData& d0);
 		ImageData& operator*(float k);
 
+		BYTE* operator[](int i) const;
+
 	}IMGDATA;
 	typedef struct GrayHistogram
 	{

@@ -5,6 +5,7 @@
 #include "../DigitalImageProcessing/ImageUtil.h"
 #include <valarray>
 #include <vector>
+#include <algorithm>
 
 void thresholdByGive(const ImageUtil::ImageData&);
 void thresholdByIterate(const ImageUtil::ImageData& data);
@@ -64,13 +65,21 @@ void laplaceOstu(const ImageUtil::IMGDATA& data)
 
 	}
 
-	for(int i = 0;i < data.width * data.height;i++)
+
+	std::vector<int> his(data.width * data.height);
+	for (int i = 0; i < data.width * data.height; i++)
 	{
-		newData[i] = newData[i] > 150 ? 1 : 0;
+		his[i] = data.pImg[i];
 	}
 
-	ImageUtil::IMGDATA imgData = data;
-	imgData.pImg = newData;
+	std::sort(his.begin(), his.end());
+	double t = his[his.size() / 2];
+
+	for(int i = 0;i < data.width * data.height;i++)
+	{
+		newData[i] = newData[i] > t ? 1 : 0;
+	}
+
 
 	ImageUtil::GRAYHISTOGRAM grayhistogram;
 	grayhistogram.pixelCount = 0;
@@ -154,6 +163,7 @@ void otsu(const ImageUtil::ImageData& data)
 	double delta[len];
 	for (int i = 0; i < len; i++)
 	{
+
 		delta[i] = otsuVariance(i, mG, histogram);
 	}
 
@@ -181,6 +191,9 @@ void otsu(const ImageUtil::ImageData& data)
 
 	k /= maxList.size();
 
+	if (k == -1)
+		return;
+
 	ImageUtil::ImageData img = data;
 	BYTE *imgData = new BYTE[data.width * data.height];
 	for (int i = 0; i < data.width * data.height; i++)
@@ -198,9 +211,12 @@ void otsu(const ImageUtil::ImageData& data)
 	ImageUtil::outputHistogram(histogram, "bitmap/histogram/threshold_by_otsu_h.bmp", k);
 }
 
-double otsuVariance(const int k, const double mG,const ImageUtil::GrayHistogram& histogram)
+double otsuVariance(const int k, const double mG, const ImageUtil::GrayHistogram& histogram)
 {
-	return std::pow(mG*otsuP(k, histogram) - otsuM(k, histogram), 2) / (otsuP(k, histogram) * (1 - otsuP(k, histogram)));
+	const double p = otsuP(k, histogram);
+	if (p == 0)
+		return -1;
+	return std::pow(mG*otsuP(k, histogram) - otsuM(k, histogram), 2) / (p* (1 - p));
 }
 
 double otsuM(const int k,const ImageUtil::GrayHistogram& histogram)
@@ -219,7 +235,7 @@ double otsuP(const int k,const ImageUtil::GrayHistogram& histogram)
 	double result = 0;
 	for(int i = 0;i < k;i++)
 	{
-		result += histogram.gray[i];
+		result += histogram.gray[i]; 
 	}
 
 	return result;
@@ -229,9 +245,18 @@ void thresholdByIterate(const ImageUtil::ImageData& data)
 {
 	ImageUtil::GrayHistogram histogram = ImageUtil::getHistogram(data);
 	histogram.normalize();
-	double t0 = 0,t1 = 128;
 
-	while (std::abs(t0 - t1) > 10)
+
+	std::vector<int> his(data.width * data.height);
+	for (int i = 0; i < data.width * data.height; i++)
+	{
+		his[i] = data.pImg[i];
+	}
+
+	std::sort(his.begin(), his.end());
+	double t0 = 0,t1 = his[his.size() / 2];
+
+	while (std::abs(t0 - t1) > 1)
 	{
 		double a0 = 0,n0 = 0, a1 = 0,n1 = 0;
 		for (int i = 0; i < t1; i++)
@@ -276,7 +301,6 @@ void thresholdByIterate(const ImageUtil::ImageData& data)
 
 	delete[] imgData;
 }
-
 
 void thresholdByGive(const ImageUtil::ImageData& data)
 {
