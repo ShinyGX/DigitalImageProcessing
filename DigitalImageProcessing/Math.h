@@ -123,7 +123,7 @@ namespace ImageUtil
 
 
 		typedef Matrix<int, 3, 3> Matrix3x3i;
-		typedef Matrix<double, 3, 3>Matrix3x3d;
+		typedef Matrix<double, 3, 3> Matrix3x3d;
 
 		typedef Matrix<int, 3, 1> Matrix3x1i;
 		typedef Matrix<double, 3, 1> Matrix3x1d;

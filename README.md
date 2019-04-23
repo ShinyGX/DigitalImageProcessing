@@ -14,3 +14,7 @@
 Exercise5 傅里叶变换
 
 [Exercise6 阈值分割](https://dearsummer.github.io/2019/04/10/%E9%98%88%E5%80%BC%E5%88%86%E5%89%B2/)
+
+[Exercise7 基于区域的阈值分割](https://dearsummer.github.io/2019/04/18/%E5%9F%BA%E4%BA%8E%E5%8C%BA%E5%9F%9F%E7%9A%84%E5%88%86%E5%89%B2/)
+
+[Exercise8 边缘检测](https://dearsummer.github.io/2019/04/19/%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B/)

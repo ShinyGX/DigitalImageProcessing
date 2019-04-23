@@ -212,6 +212,46 @@ void ImageUtil::outputImage(const ImageData& data, const std::string& path)
 	outputImage(data, data.infoHeader.biClrUsed, path);
 }
 
+void ImageUtil::outputImage(BYTE* data, const int width, const int height,int clrUse, const int bitCount,RGBQUAD *rgbquad, const std::string& path)
+{
+	if (clrUse > 256)
+		clrUse = 256;
+	if (clrUse < 0)
+		clrUse = 0;
+
+	BITMAPFILEHEADER header;
+	header.bfType = 0x4d42;
+	header.bfReserved1 = 0;
+	header.bfReserved2 = 0;
+	header.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * clrUse + width * height * bitCount / 8;
+	header.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * clrUse;
+
+	BITMAPINFOHEADER info;
+	info.biSize = sizeof(BITMAPINFOHEADER);
+	info.biWidth = width;
+	info.biHeight = height;
+	info.biPlanes = 1;
+	info.biBitCount = bitCount;
+	info.biClrUsed = clrUse;
+	info.biClrImportant = 0;
+	info.biCompression = 0;
+	info.biSizeImage = width * height * bitCount / 8;
+	info.biXPelsPerMeter = 0;
+	info.biYPelsPerMeter = 0;
+
+	ImageData img{};
+	img.fileHeader = header;
+	img.infoHeader = info;
+
+	for(int i = 0;i < clrUse;i++)
+	{
+		img.rgbquad[i] = rgbquad[i];
+	}
+
+	img.pImg = data;
+	outputImage(img, path);
+}
+
 void ImageUtil::outputBlackWhiteImage(ImageData data, const std::string& path)
 {
 	RGBQUAD white;

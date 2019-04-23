@@ -11,8 +11,7 @@ struct Region
 	int wBeginIndex = 0, wEndIndex = 0, hBeginIndex = 0, hEndIndex = 0;
 	bool Q = false;
 };
-
-void regionGrowWithSeed(const ImageUtil::IMGDATA& data, BYTE * unRegion, int *growQueX, int *growQueY, int threshold, int seedX, int seedY);
+void regionGrowWithSeed(const ImageUtil::IMGDATA& data, BYTE * unRegion, int *growQueX, int *growQueY, int threshold, int seedX, int seedY, int color);
 Region* splitRegion(const Region& r, Region *alloc);
 double getAver(const ImageUtil::IMGDATA& data,const Region& r);
 ImageUtil::IMGDATA reginGrowWithoutSeed(ImageUtil::IMGDATA data, int threadhold);
@@ -42,13 +41,33 @@ int main()
 	// 	}
 	// }
 	
-	regionGrowWithSeed(seed, unRegion, growQueX, growQueY, 5, 0, 0);
-	regionGrowWithSeed(seed, unRegion, growQueX, growQueY, 5, seed.width / 2, seed.height / 2);
-	regionGrowWithSeed(seed, unRegion, growQueX, growQueY, 10, 328, 283 - 45);
+	regionGrowWithSeed(seed, unRegion, growQueX, growQueY, 3, 0, 0, 1);
+	regionGrowWithSeed(seed, unRegion, growQueX, growQueY, 2, seed.width / 2, seed.height / 2, 2);
+	regionGrowWithSeed(seed, unRegion, growQueX, growQueY, 10, 328, 283 - 45, 3);
+
 
 	ImageUtil::IMGDATA newImg = seed;
+	newImg.rgbquad[1].rgbBlue = 255;
+	newImg.rgbquad[1].rgbGreen = 0;
+	newImg.rgbquad[1].rgbRed = 0;
+
+	newImg.rgbquad[2].rgbBlue = 0;
+	newImg.rgbquad[2].rgbGreen = 255;
+	newImg.rgbquad[2].rgbRed = 0;
+
+
+	newImg.rgbquad[3].rgbBlue = 0;
+	newImg.rgbquad[3].rgbGreen = 0;
+	newImg.rgbquad[3].rgbRed = 255;
+
+	data.fileHeader.bfOffBits = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + sizeof(RGBQUAD) * 4;
+	data.fileHeader.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + sizeof(RGBQUAD) * 4 + data.infoHeader.biSizeImage;
+
+	data.infoHeader.biClrUsed = 4;
+
+
 	newImg.pImg = unRegion;
-	ImageUtil::outputBlackWhiteImage(newImg, "bitmap/region_grow_with_seed.bmp");
+	ImageUtil::outputImage(newImg, "bitmap/region_grow_with_seed.bmp");
 
 	
 	ImageUtil::outputBlackWhiteImage(reginGrowWithoutSeed(data, 80), "bitmap/region_grow.bmp");
@@ -166,7 +185,7 @@ double getAver(const ImageUtil::IMGDATA& data, const Region& r)
 	return static_cast<double>(result) / count;
 }
 
-void regionGrowWithSeed(const ImageUtil::IMGDATA& data,BYTE * unRegion,int *growQueX,int *growQueY, int threshold, int seedX, int seedY)
+void regionGrowWithSeed(const ImageUtil::IMGDATA& data,BYTE * unRegion,int *growQueX,int *growQueY, int threshold, int seedX, int seedY,int color)
 {
 	int nDx[8] = { 0, 0,1,-1, 1,1,-1,-1 };
 	int nDy[8] = { 1,-1,0, 0,-1,1, 1,-1 };
@@ -196,7 +215,7 @@ void regionGrowWithSeed(const ImageUtil::IMGDATA& data,BYTE * unRegion,int *grow
 				growQueX[end] = xx;
 				growQueY[end] = yy;
 
-				unRegion[yy * data.width + xx] = 1;
+				unRegion[yy * data.width + xx] = color;
 
 			}
 		}
