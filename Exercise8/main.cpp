@@ -6,6 +6,7 @@
 #include <queue>
 #include <valarray>
 #include "../DigitalImageProcessing/Math.h"
+#include "../DigitalImageProcessing/Ftt.h"
 
 const double e = 2.7182818;
 
@@ -36,7 +37,7 @@ int main()
 	auto img = ImageUtil::loadImageToGray(path);
 	auto p = prewitt(img, 100);
 	auto s = sobel(img, 100);
-	auto l = LOG(img, 2, 100);
+	auto l = LOG(img, 0.05, 100);
 	auto c = canny(img, 50, 100);
 	ImageUtil::outputBlackWhiteImage(p, "bitmap/prewitt.bmp");
 	ImageUtil::outputBlackWhiteImage(s,"bitmap/sobel.bmp");
@@ -94,10 +95,9 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				for (int y = -2; y <= 2; y++)
 				{
 					sum += data[i + x][j + y] * gaus[4 - (x + 2)][y + 2];
-				}
-				data[i][j] = sum;
+				}				
 			}
-			
+			data[i][j] = sum;
 		}
 	}
 
@@ -127,6 +127,12 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 		}
 	}
 
+	BYTE *temp = new BYTE[data.width * data.height];
+	for(int i = 0;i < data.width * data.height;i++)
+	{
+		temp[i] = sobelImg[i];
+	}
+
 	for (int i = 1; i < data.height - 1; i++)
 	{
 		for (int j = 1; j < data.width - 1; j++)
@@ -142,7 +148,7 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				if (sobelImg[i * data.width + j] < sobelImg[i * data.width + j + 1] ||
 					sobelImg[i * data.width + j] < sobelImg[i * data.width + j - 1])
 				{
-					sobelImg[i * data.width + j] = 0;
+					temp[i * data.width + j] = 0;
 				}
 			}
 			//-45度
@@ -151,7 +157,7 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				if (sobelImg[i * data.width + j] < sobelImg[(i + 1) * data.width + j - 1] ||
 					sobelImg[i * data.width + j] < sobelImg[(i - 1) * data.width + j + 1])
 				{
-					sobelImg[i * data.width + j] = 0;
+					temp[i * data.width + j] = 0;
 				}
 			}
 			//垂直
@@ -160,7 +166,7 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				if (sobelImg[i * data.width + j] < sobelImg[(i + 1) * data.width + j] ||
 					sobelImg[i * data.width + j] < sobelImg[(i - 1) * data.width + j])
 				{
-					sobelImg[i * data.width + j] = 0;
+					temp[i * data.width + j] = 0;
 				}
 			}
 			//+45度
@@ -169,18 +175,22 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				if (sobelImg[i * data.width + j] < sobelImg[(i + 1) * data.width + j + 1] ||
 					sobelImg[i * data.width + j] < sobelImg[(i - 1) * data.width + j - 1])
 				{
-					sobelImg[i * data.width + j] = 0;
+					temp[i * data.width + j] = 0;
 				}
 			}
 		}
+	}	
+	
+	for (int i = 0; i < data.width * data.height; i++)
+	{
+		sobelImg[i] = temp[i];
 	}
-
+	delete[] temp;
 	delete[] gxArr;
 	delete[] gyArr;
 
 	std::queue<Pixel> highPixQue;
 	BYTE *lowPix = new BYTE[data.width * data.height];
-
 	for (int i = 0; i < data.height; i++)
 	{
 		for (int j = 0; j < data.width; j++) {
@@ -189,6 +199,7 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				const Pixel p(j, i, 1);
 				highPixQue.push(p);
 			}
+		
 
 			if (sobelImg[i * data.width + j] > minVal && sobelImg[i * data.width + j] <= maxVal)
 			{
@@ -218,18 +229,32 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 				if (i == 0 && j == 0)
 					continue;
 
-				if(lowPix[(p.y + i) * data.width + p.x + j] == 1)
+				if (lowPix[(p.y + i) * data.width + p.x + j] == 1)
 				{
-					sobelImg[(p.y + i) * data.width + p.x + j] = 1;
+					//8联通合并
+					for (int x = -1; x <= 1; x++)
+					{
+						for (int y = -1; y <= 1; y++)
+						{
+							if (p.y + i + y < 0 || p.y + i + y >= data.height || p.x + j + x < 0 || p.x + j + x >= data.width)
+								continue;
+
+							if (lowPix[(p.y + i + y) * data.width + p.x + j + x] == 1)
+							{
+								highPixQue.push(Pixel(p.x + j, p.y + i, 1));
+							}
+
+								
+						}
+					}
 					lowPix[(p.y + i) * data.width + p.x + j] = 0;
-					highPixQue.push(Pixel(p.x + j, p.y + i, 1));
+
 				}
 			}
 		}
 	}
 
 	delete[] lowPix;
-
 
 	data.pImg = sobelImg;
 	//delete[] sobelImg;
@@ -241,6 +266,8 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 
 	return data;
 }
+
+
 
 ImageUtil::IMGDATA LOG(ImageUtil::IMGDATA data,double sqrSigma, const int threadhold)
 {
@@ -258,9 +285,9 @@ ImageUtil::IMGDATA LOG(ImageUtil::IMGDATA data,double sqrSigma, const int thread
 				{
 					sum += data[i + x][j + y] * gaus[4 - (x + 2)][y + 2];
 				}
-				img[i * data.width + j] = sum;
+				
 			}
-
+			img[i * data.width + j] = sum;
 		}
 	}
 	// for (int i = 2; i < data.height - 2; i++)

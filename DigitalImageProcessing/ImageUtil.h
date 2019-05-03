@@ -33,6 +33,7 @@ namespace ImageUtil
 		bool isNormalize = false;
 	}GRAYHISTOGRAM;
 
+
 	inline void GrayHistogram::normalize()
 	{
 		if (isNormalize)
