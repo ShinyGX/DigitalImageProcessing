@@ -275,7 +275,7 @@ ImageUtil::IMGDATA scale(ImageUtil::IMGDATA data)
 IMGDATA mirror(IMGDATA data)
 {
 	ImageUtil::Math::Matrix3x3i mat({ 
-								-1, 0, data.width,
+								-1, 0, static_cast<int>(data.width),
 								 0, 1, 0,
 								 0, 0, 1 });
 	std::cout << mat;

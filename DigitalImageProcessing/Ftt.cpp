@@ -18,7 +18,7 @@ std::complex<double>* ImageUtil::FFT::dft2d(ImageData& data)
 				for (int j = 0; j < data.height; j++)
 				{
 					double I = data.pImg[i * data.width + j];
-					double X = pi * 2 * (static_cast<double>(i)*u / static_cast<double>(data.width) +
+					double X = PI * 2 * (static_cast<double>(i)*u / static_cast<double>(data.width) +
 						static_cast<double>(j)*v / static_cast<double>(data.height));
 
 					real += std::cos(X)*I;
@@ -47,9 +47,6 @@ void ImageUtil::FFT::nomalisize(double* dest, ImageData& data)
 	for (int i = 0; i < data.width * data.height; i++)
 	{
 		dest[i] = clamp(dest[i] * 0.01);
-		//dest[i] = (dest[i] - min) * step;
-		//dest[i] *=45.9 * std::log(static_cast<double>(1 + dest[i]));
-		//std::cout << dest[i] << std::endl;
 	}
 
 	//shift(dest, data.width, data.height);
@@ -265,7 +262,7 @@ std::complex<double>* ImageUtil::FFT::realFtt(double* src, int size)
 
 void ImageUtil::FFT::getWN(double n, double size, std::complex<double>& dst)
 {
-	const double x = 2.0 * pi * n / size;
+	const double x = 2.0 * PI * n / size;
 	dst.real(std::cos(x));
 	dst.imag(-std::sin(x));
 }

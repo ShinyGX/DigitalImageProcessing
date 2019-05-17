@@ -115,12 +115,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Bmp.h" />
+    <ClInclude Include="Edge.h" />
+    <ClInclude Include="Extend.h" />
     <ClInclude Include="Ftt.h" />
     <ClInclude Include="ftt_C.h" />
     <ClInclude Include="ImageUtil.h" />
     <ClInclude Include="Math.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bmp.cpp" />
+    <ClCompile Include="Edge.cpp" />
     <ClCompile Include="Ftt.cpp" />
     <ClCompile Include="ImageUtil.cpp" />
   </ItemGroup>

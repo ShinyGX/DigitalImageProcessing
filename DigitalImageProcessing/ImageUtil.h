@@ -1,9 +1,29 @@
 #pragma once
 #include <windows.h>
 #include <string>
+#include "Math.h"
+#include <vector>
 
 namespace ImageUtil
 {
+	typedef unsigned int ImageSize;
+
+	typedef struct Pixel {
+		Math::Vector<unsigned int, 2> vec2{};
+		int mask = 0;
+		byte pix = 0;
+
+		Pixel() = default;
+		Pixel(const unsigned int x, const unsigned int y, const byte p) :vec2({ y,x }), pix(p) {}
+
+		unsigned int getX();
+		unsigned int getY();
+		void setX(unsigned int x);
+		void setY(unsigned int y);
+		bool operator<(Pixel& other) const;
+		bool operator==(Pixel& other);
+
+	} PVec2;
 
 	typedef struct ImageColor {
 		BYTE r, g, b, a;
@@ -14,8 +34,8 @@ namespace ImageUtil
 		BITMAPINFOHEADER infoHeader;
 		RGBQUAD rgbquad[256];
 		BYTE * pImg;
-		int length;
-		int width, height;
+		ImageSize length;
+		ImageSize width, height;
 		//std::shared_ptr<BYTE*> pImg;
 		ImageData& operator+(ImageData& d0);
 		ImageData& operator*(float k);
@@ -58,6 +78,16 @@ namespace ImageUtil
 	void outputHistogram(const GrayHistogram& histogram, const std::string&path);
 	void outputHistogram(const GrayHistogram& histogram, const std::string&path, int mark);
 
+	ImageData toTwoValueImage(ImageData &data,byte t = 0);
+	
+	double toRadian(double angle);
+
 	int clamp(int c);
+
+	template<typename T,int size = sizeof T>
+	void initWithZero(T* dst, const unsigned int len)
+	{
+		memset(dst, 0, len * size);
+	}
 }
 

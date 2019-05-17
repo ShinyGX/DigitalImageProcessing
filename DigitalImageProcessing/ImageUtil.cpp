@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <cassert>
+#include "Math.h"
 
 
 int ImageUtil::clamp(const int c)
@@ -80,9 +81,9 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 		case 24:
 		{
 			int point = 0;
-			for (int i = 0; i < data.height; i++)
+			for (ImageSize i = 0; i < data.height; i++)
 			{
-				for (int j = 0; j < data.width; j++)
+				for (ImageSize j = 0; j < data.width; j++)
 				{
 					rgba[i * data.width + j].b = data.pImg[point++];
 					rgba[i * data.width + j].g = data.pImg[point++];
@@ -108,9 +109,9 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 
 			BYTE * newData = new BYTE[data.width * data.height];
 			point = 0;
-			for (int i = 0; i < data.height; i++)
+			for (ImageSize i = 0; i < data.height; i++)
 			{
-				for (int j = 0; j < data.width; j++)
+				for (ImageSize j = 0; j < data.width; j++)
 				{
 					newData[point++] = rgba[i * data.width + j].r * 0.299 + rgba[i * data.width + j].g * 0.587 + rgba[i * data.width + j].b * 0.114;
 				}
@@ -123,9 +124,9 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 		case 32:
 		{
 			int point = 0;
-			for (int i = 0; i < data.height; i++)
+			for (ImageSize i = 0; i < data.height; i++)
 			{
-				for (int j = 0; j < data.width; j++)
+				for (ImageSize j = 0; j < data.width; j++)
 				{
 					rgba[i * data.width + j].b = data.pImg[point++];
 					rgba[i * data.width + j].g = data.pImg[point++];
@@ -152,9 +153,9 @@ ImageUtil::ImageData ImageUtil::loadImageToGray(const std::string & path)
 
 			BYTE * newData = new BYTE[data.width * data.height];
 			point = 0;
-			for (int i = 0; i < data.height; i++)
+			for (ImageSize i = 0; i < data.height; i++)
 			{
-				for (int j = 0; j < data.width; j++)
+				for (ImageSize j = 0; j < data.width; j++)
 				{
 					newData[point++] = rgba[i * data.width + j].r * 0.299 + rgba[i * data.width + j].g * 0.587 + rgba[i * data.width + j].b * 0.114;
 				}
@@ -184,11 +185,11 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 		return;	
 
 	BYTE *img = new BYTE[data.infoHeader.biSizeImage];
-	const int byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
+	const ImageSize byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
 	int point = -1;
-	for(int i = 0;i < data.height;i++)
+	for(ImageSize i = 0;i < data.height;i++)
 	{
-		for(int j = 0;j < byteWidth;j++)
+		for(ImageSize j = 0;j < byteWidth;j++)
 		{
 			img[++point] = data.pImg[i * byteWidth + j];
 		}
@@ -219,11 +220,13 @@ void ImageUtil::outputImage(BYTE* data, const int width, const int height,int cl
 	if (clrUse < 0)
 		clrUse = 0;
 
+	const int byteWidth = (width * bitCount / 8 + 3) / 4 * 4;
+
 	BITMAPFILEHEADER header;
 	header.bfType = 0x4d42;
 	header.bfReserved1 = 0;
 	header.bfReserved2 = 0;
-	header.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * clrUse + width * height * bitCount / 8;
+	header.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * clrUse + byteWidth * height * bitCount / 8;
 	header.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * clrUse;
 
 	BITMAPINFOHEADER info;
@@ -235,13 +238,16 @@ void ImageUtil::outputImage(BYTE* data, const int width, const int height,int cl
 	info.biClrUsed = clrUse;
 	info.biClrImportant = 0;
 	info.biCompression = 0;
-	info.biSizeImage = width * height * bitCount / 8;
+	info.biSizeImage = byteWidth * height * bitCount / 8;
 	info.biXPelsPerMeter = 0;
 	info.biYPelsPerMeter = 0;
 
 	ImageData img{};
 	img.fileHeader = header;
 	img.infoHeader = info;
+
+	img.width = width;
+	img.height = height;
 
 	for(int i = 0;i < clrUse;i++)
 	{
@@ -274,7 +280,7 @@ void ImageUtil::outputBlackWhiteImage(ImageData data, const std::string& path)
 	data.rgbquad[0] = black;
 	data.rgbquad[1] = white;
 
-	for(int i = 0;i < data.width *data.height;i++)
+	for(ImageSize i = 0;i < data.width *data.height;i++)
 	{
 		data.pImg[i] = data.pImg[i] > 0 ? 1 : 0;
 	}
@@ -286,9 +292,9 @@ ImageUtil::GRAYHISTOGRAM ImageUtil::getHistogram(const IMGDATA& data)
 {
 	GRAYHISTOGRAM grayhistogram;
 	int point = 0;
-	for (int i = 0; i < data.height; i++)
+	for (ImageSize i = 0; i < data.height; i++)
 	{
-		for (int j = 0; j < data.width; j++)
+		for (ImageSize j = 0; j < data.width; j++)
 		{
 			grayhistogram.gray[data.pImg[point++]]++;
 		}
@@ -402,12 +408,65 @@ void ImageUtil::outputHistogram(const GrayHistogram& histogram, const std::strin
 	delete[] imgData;
 }
 
+ImageUtil::ImageData ImageUtil::toTwoValueImage(ImageData& data, const byte t)
+{
+	for(ImageSize i = 0;i < data.width * data.height ;i++)
+	{
+		if(data.pImg[i] > t)
+		{
+			data.pImg[i] = 1;
+		}
+		else
+		{
+			data.pImg[i] = 0;
+		}
+	}
+
+	return data;
+}
+
+double ImageUtil::toRadian(const double angle)
+{
+	return angle * PI / 180;
+}
+
+
+unsigned ImageUtil::Pixel::getX()
+{
+	return vec2[1];
+}
+
+unsigned ImageUtil::Pixel::getY()
+{
+	return vec2[0];
+}
+
+void ImageUtil::Pixel::setX(const unsigned int x)
+{
+	vec2[1] = x;
+}
+
+void ImageUtil::Pixel::setY(const unsigned int y)
+{
+	vec2[0] = y;
+}
+
+
+bool ImageUtil::Pixel::operator<(Pixel& other) const
+{
+	return pix < other.pix;
+}
+
+bool ImageUtil::Pixel::operator==(Pixel& other)
+{
+	return vec2[0] == other.vec2[0] && vec2[1] == other.vec2[1];
+}
 
 ImageUtil::ImageData & ImageUtil::ImageData::operator+(ImageData& d0)
 {
-	for(int i = 0;i < height;i++)
+	for(ImageSize i = 0;i < height;i++)
 	{
-		for(int j = 0;j < width;j++)
+		for(ImageSize j = 0;j < width;j++)
 		{
 			pImg[i * width + j] = ImageUtil::clamp(pImg[i * width + j] + d0.pImg[i * width + j]);
 		}
@@ -419,9 +478,9 @@ ImageUtil::ImageData & ImageUtil::ImageData::operator+(ImageData& d0)
 
 ImageUtil::ImageData & ImageUtil::ImageData::operator*(const float k)
 {
-	for(int i =0;i < height;i++)
+	for(ImageSize i =0;i < height;i++)
 	{
-		for(int j = 0;j < width;j++)
+		for(ImageSize j = 0;j < width;j++)
 		{
 			pImg[i * width + j] = ImageUtil::clamp(pImg[i * width + j] * k);
 		}

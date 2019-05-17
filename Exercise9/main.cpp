@@ -3,10 +3,9 @@
 #include <string>
 #include "../DigitalImageProcessing/ImageUtil.h"
 #include <iostream>
-#include <valarray>
-#include <queue>
 #include "../DigitalImageProcessing/Math.h"
-#include <map>
+#include <queue>
+#include <valarray>
 
 struct Pixel
 {
@@ -21,29 +20,11 @@ struct Pixel
 	Pixel() = default;
 };
 
-struct Hough
-{
-	double sigma, r;
-	int x, y;
-	std::vector<Hough> child;
-	Hough() = default;
-	Hough(double sigma, double r,int x,int y) :sigma(sigma), r(r),x(x),y(y) {}
 
-	bool operator==(Hough& h) const
-	{
-		return h.sigma == sigma;
-	}
-
-	void addChild(Hough& h)
-	{
-		child.push_back(h);
-	}
-};
-
-
-ImageUtil::IMGDATA houghLine(ImageUtil::ImageData data, int max);
+ImageUtil::IMGDATA hough(ImageUtil::ImageData data, double deltaSigma, double deltaRadius, int threadhold);
 ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int maxVal);
-void drawLine(BYTE* img, int x0, int y0, int x1, int y1, int width, int clr);
+void drawLine(ImageUtil::ImageData& img, int x0, int y0, int x1, int y1, const int clr);
+void drawLine(ImageUtil::ImageData& img, const double k, const double b, const int clr);
 double** getGaussianKernel(const int size, const double sqrSigma);
 
 int main()
@@ -52,9 +33,12 @@ int main()
 	std::string path;
 	std::cin >> path;
 	auto img = ImageUtil::loadImageToGray(path);
-	auto c = canny(img, 50,100);
-	ImageUtil::outputImage(c, "bitmap/canny.bmp");
-	ImageUtil::outputBlackWhiteImage(houghLine(c,3), "bitmap/hough.bmp");
+	auto c = canny(img, 40,80);
+	ImageUtil::outputBlackWhiteImage(c, "bitmap/canny.bmp");
+	auto h = hough(c, 0.5, 2, 30);
+	
+	ImageUtil::outputImage(h.pImg, h.width, h.height, 3, 8, h.rgbquad, "bitmap/hough_result.bmp");
+
 	return 0;
 }
 
@@ -92,9 +76,9 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int ma
 {
 	//	BYTE * byte = new BYTE[data.width * data.height];
 	double** gaus = getGaussianKernel(5, 0.01);
-	for (int i = 2; i < data.height - 2; i++)
+	for (unsigned int i = 2; i < data.height - 2; i++)
 	{
-		for (int j = 2; j < data.width - 2; j++)
+		for (unsigned int j = 2; j < data.width - 2; j++)
 		{
 			int sum = 0;
 			for (int x = -2; x <= 2; x++)
@@ -116,9 +100,9 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int ma
 	memset(gxArr, 0, data.width * data.height);
 	memset(gyArr, 0, data.width * data.height);
 
-	for (int i = 1; i < data.height - 1; i++)
+	for (ImageUtil::ImageSize i = 1; i < data.height - 1; i++)
 	{
-		for (int j = 1; j < data.width - 1; j++)
+		for (ImageUtil::ImageSize j = 1; j < data.width - 1; j++)
 		{
 			const int gx = data[i - 1][j - 1] * -1 + data[i][j - 1] * -2 + data[i + 1][j - 1] * -1 +
 				data[i - 1][j + 1] * 1 + data[i][j + 1] * 2 + data[i + 1][j + 1] * 1;
@@ -135,20 +119,20 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int ma
 	}
 
 	BYTE *temp = new BYTE[data.width * data.height];
-	for (int i = 0; i < data.width * data.height; i++)
+	for (ImageUtil::ImageSize i = 0; i < data.width * data.height; i++)
 	{
 		temp[i] = sobelImg[i];
 	}
 
-	for (int i = 1; i < data.height - 1; i++)
+	for (ImageUtil::ImageSize i = 1; i < data.height - 1; i++)
 	{
-		for (int j = 1; j < data.width - 1; j++)
+		for (ImageUtil::ImageSize j = 1; j < data.width - 1; j++)
 		{
 			double dir;
 			if (gxArr[i*data.width + j] == 0)
 				dir = 90;
 			else
-				dir = (std::atan(gyArr[i*data.width + j] / gxArr[i*data.width + j])) * 180 / ImageUtil::pi;
+				dir = (std::atan(gyArr[i*data.width + j] / gxArr[i*data.width + j])) * 180 / ImageUtil::PI;
 			//ˮƽ
 			if ((dir >= 157.5 || dir <= -157.5) || (dir <= 22.5 && dir >= -22.5))
 			{
@@ -198,9 +182,9 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int ma
 
 	std::queue<Pixel> highPixQue;
 	BYTE *lowPix = new BYTE[data.width * data.height];
-	for (int i = 0; i < data.height; i++)
+	for (unsigned int i = 0; i < data.height; i++)
 	{
-		for (int j = 0; j < data.width; j++) {
+		for (unsigned int j = 0; j < data.width; j++) {
 			if (sobelImg[i * data.width + j] > maxVal)
 			{
 				const Pixel p(j, i, 1);
@@ -274,74 +258,136 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int ma
 	return data;
 }
 
-
-ImageUtil::IMGDATA houghLine(ImageUtil::ImageData data,int max)
+ImageUtil::IMGDATA hough(ImageUtil::ImageData data, const double deltaSigma, const double deltaRadius, const int threadhold)
 {
-	const int len = std::sqrt(data.width * data.width + data.height * data.height);
-	std::vector<Hough> sigma;
-	for (int i = 0; i < data.height; i++)
+	typedef ImageUtil::ImageSize size;
+
+	const size maxRadius = std::sqrt(data.width * data.width + data.height * data.height);
+
+
+	const size radius = std::ceil(maxRadius / deltaRadius) * 2;
+	const size sigma = std::ceil(360 / deltaSigma);
+
+	size *houghArr = new size[radius * sigma];
+	memset(houghArr, 0,radius*sigma * sizeof size);
+
+	for (size i = 0; i < data.height; i++)
 	{
-		for (int j = 0; j < data.width; j++)
+		for (size j = 0; j < data.width; j++)
 		{
 			if (data[i][j] == 0)
 				continue;
 
-			if (j == 0)
-				continue;
-
-			const double r = std::sqrt(i*i + j * j);
-			const double s = std::acos(j / r);
-			sigma.emplace_back(s, r, j, i);
-		}
-	}
-
-	for (std::vector<Hough>::size_type i = 0; i < sigma.size() - 1; i++)
-	{
-		for (std::vector<Hough>::size_type j = i + 1; j < sigma.size(); j++)
-		{
-			if (sigma[i] == sigma[j])
+			for (double theta = 0; theta < 360;)
 			{
-				sigma[i].addChild(sigma[j]);
-				sigma.erase(sigma.begin() + j);
-				j--;
+
+				const double radian = ImageUtil::toRadian(theta);
+				const double r = j * std::cos(radian) + i * std::sin(radian) + maxRadius;
+				theta += deltaSigma;
+				// if(r > maxRadius)
+				// 	continue;
+				houghArr[static_cast<unsigned int>((r / deltaRadius) * sigma + theta / deltaSigma)]++;
+
+			
 			}
+
 		}
 	}
 
-	for (Hough& h : sigma)
+	size max = 0;
+	for(size i = 0;i < radius * sigma;i++)
 	{
-		if(h.child.size() >= max - 1)
-		{
-			drawLine(data.pImg, h.x, h.y, h.child[h.child.size() - 1].x, h.child[h.child.size() - 1].y, data.width, 2);
-		}
+		if (houghArr[i] > max)
+			max = houghArr[i];
 	}
 
+	BYTE * houghImg = new BYTE[sigma*radius];
+	for(size i = 0;i < radius*sigma;i++)
+	{
+		houghImg[i] = static_cast<double>(houghArr[i]) / max * 255;
+	}
+	std::cout << max;
 
-	data.rgbquad[0].rgbGreen = 0;
-	data.rgbquad[0].rgbBlue = 0;
-	data.rgbquad[0].rgbRed = 0;
-
-	data.rgbquad[1].rgbGreen = 255;
-	data.rgbquad[1].rgbBlue = 255;
-	data.rgbquad[1].rgbRed = 255;
-
-	data.rgbquad[2].rgbGreen = 0;
-	data.rgbquad[2].rgbBlue = 255;
-	data.rgbquad[2].rgbRed = 0;
-
-	data.fileHeader.bfOffBits = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + sizeof(RGBQUAD) * 3;
-	data.fileHeader.bfSize = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER) + sizeof(RGBQUAD) * 3 + data.infoHeader.biSizeImage;
-
-	data.infoHeader.biClrUsed = 3;
-
-	ImageUtil::outputImage(data ,"bitmap/l.bmp");
-	//ImageUtil::outputImage(houghImg, 90, len, 2, 8, rgb, "bitmap/houghMap.bmp");
+	ImageUtil::outputImage(houghImg,radius, sigma, 256, 8, data.rgbquad, "bitmap/hough.bmp");
 
 
+	for (double i = 0; i < radius;)
+	{
+		for (double j = 0; j < sigma;)
+		{
+			if(houghArr[static_cast<int>(i * sigma + j)] < max * 0.6f)
+			{
+				j += deltaSigma;
+				continue;
+			}
+				
+			const double radian = ImageUtil::toRadian(j * deltaSigma);
+			if (std::sin(radian) == 0)
+			{
+				drawLine(data, 0, i - maxRadius, 2);
+			}
+			else
+			{
+				drawLine(data, -(std::cos(radian) / std::sin(radian)), (i * deltaRadius - maxRadius) / std::sin(radian), 2);
+			}
+
+			j += deltaSigma;
+		}
+
+		i += deltaRadius;
+	}
+
+	RGBQUAD rgb[3];
+	rgb[0].rgbBlue = 0;
+	rgb[0].rgbGreen = 0;
+	rgb[0].rgbRed = 0;
+	rgb[0].rgbReserved = 0;
+
+	rgb[1].rgbBlue = 255;
+	rgb[1].rgbGreen = 255;
+	rgb[1].rgbRed = 255;
+	rgb[1].rgbReserved = 0;
+
+	rgb[2].rgbBlue = 255;
+	rgb[2].rgbGreen = 0;
+	rgb[2].rgbRed = 0;
+	rgb[2].rgbReserved = 0;
+
+	for (int i = 0; i < 3; i++)
+	{
+		data.rgbquad[i] = rgb[i];
+	}
+
+	delete[] houghImg;
+	delete[] houghArr;
 	return data;
 }
 
-void drawLine(BYTE* img, int x0, int y0, int x1, int y1, const int width, const int clr)
+void drawLine(ImageUtil::ImageData& img, const double k, const double b, const int clr)
+{
+	for (ImageUtil::ImageSize i = 0; i < img.width; i++)
+	{
+		const double y = k * i + b;
+
+		if (y < 0 || y >= img.height)
+			continue;
+		const double y1 = k * (i - 1) + b;
+		if (i > 0)
+		{
+			for (int j = y1; j < static_cast<int>(y); j++)
+			{
+				if(j < 0 || j >= static_cast<int>(img.height))
+					continue;
+				img[j][i] = clr;
+			}
+		}
+
+		img[y][i] = clr;
+
+	}
+}
+
+void drawLine(ImageUtil::ImageData& img, int x0, int y0, int x1, int y1, const int clr)
 {
 	if (x0 > x1)
 	{
@@ -357,11 +403,13 @@ void drawLine(BYTE* img, int x0, int y0, int x1, int y1, const int width, const 
 		y1 = temp;
 	}
 
-	const double k = (y1 - y0) / (x1 - x0);
+	const double k = static_cast<double>(y1 - y0) / (x1 - x0);
 	const double b = x0 * k - y0;
 	for (int i = x0; i < x1; i++)
 	{
 		const double y = k * i + b;
-		img[static_cast<int>(y * width + i)] = clr;
+		if (y > img.height || y < 0 || i > img.width || i < 0)
+			break;
+		img[y][i] = clr;
 	}
 }

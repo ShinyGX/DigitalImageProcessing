@@ -141,7 +141,7 @@ ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal,const int max
 			if (gxArr[i*data.width + j] == 0)
 				dir = 90;
 			else
-				dir = (std::atan(gyArr[i*data.width + j] / gxArr[i*data.width + j])) * 180 / ImageUtil::pi;
+				dir = (std::atan(gyArr[i*data.width + j] / gxArr[i*data.width + j])) * 180 / ImageUtil::PI;
 			//ˮƽ
 			if ((dir >= 157.5 || dir <= -157.5) || (dir <= 22.5 && dir >= -22.5))
 			{
