@@ -21,3 +21,4 @@ Exercise5 傅里叶变换
 
 [Exercise8 边缘检测](https://dearsummer.github.io/posts/49b27d17/)
 
+[Exercise9 霍夫变换](https://dearsummer.github.io/posts/e9f2d7e8/)
