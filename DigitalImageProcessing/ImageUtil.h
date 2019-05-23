@@ -6,6 +6,7 @@
 
 namespace ImageUtil
 {
+	struct GrayHistogram;
 	typedef unsigned int ImageSize;
 
 	typedef struct Pixel {
@@ -25,24 +26,6 @@ namespace ImageUtil
 
 	} PVec2;
 
-	typedef struct ImageColor {
-		BYTE r, g, b, a;
-	}RGBA;
-	typedef struct ImageData
-	{
-		BITMAPFILEHEADER fileHeader;
-		BITMAPINFOHEADER infoHeader;
-		RGBQUAD rgbquad[256];
-		BYTE * pImg;
-		ImageSize length;
-		ImageSize width, height;
-		//std::shared_ptr<BYTE*> pImg;
-		ImageData& operator+(ImageData& d0);
-		ImageData& operator*(float k);
-
-		BYTE* operator[](int i) const;
-
-	}IMGDATA;
 	typedef struct GrayHistogram
 	{
 		double gray[256] = { 0 };
@@ -52,6 +35,26 @@ namespace ImageUtil
 	private:
 		bool isNormalize = false;
 	}GRAYHISTOGRAM;
+
+	typedef struct ImageColor {
+		BYTE r, g, b, a;
+	}RGBA;
+	typedef struct ImageData
+	{
+		BITMAPFILEHEADER fileHeader{};
+		BITMAPINFOHEADER infoHeader{};
+		RGBQUAD rgbquad[256]{};
+		BYTE * pImg = nullptr;
+		ImageSize length = 0;
+		ImageSize width = 0, height = 0;
+
+		ImageData& operator+(ImageData& d0);
+		ImageData& operator*(float k);
+
+		BYTE* operator[](int i) const;
+
+	}IMGDATA;
+
 
 
 	inline void GrayHistogram::normalize()
@@ -89,5 +92,7 @@ namespace ImageUtil
 	{
 		memset(dst, 0, len * size);
 	}
+
+
 }
 

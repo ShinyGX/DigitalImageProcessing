@@ -147,8 +147,6 @@ IMGDATA rotate(IMGDATA data)
 
 	return img;
 }
-
-
 IMGDATA translate(IMGDATA data)
 {
 	int xTrans, yTrans;
@@ -197,8 +195,6 @@ IMGDATA translate(IMGDATA data)
 	img.pImg = newData;
 	return img;
 }
-
-
 ImageUtil::IMGDATA scale(ImageUtil::IMGDATA data)
 {
 	float xScale, yScale;
@@ -270,8 +266,6 @@ ImageUtil::IMGDATA scale(ImageUtil::IMGDATA data)
 	newImg.pImg = newData;
 	return newImg;
 }
-
-
 IMGDATA mirror(IMGDATA data)
 {
 	ImageUtil::Math::Matrix3x3i mat({ 

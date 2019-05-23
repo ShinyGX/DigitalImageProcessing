@@ -2,9 +2,258 @@
 #include <iostream>
 #include <algorithm>
 #include <queue>
+#include "ProcessBar.h"
 
 
 using namespace ImageUtil;
+
+void ImageUtil::writeImg(BITMAPFILEHEADER* header, BITMAPINFOHEADER* info, BYTE* rgb, int size, FILE* pf)
+{
+	fwrite(header, sizeof(BITMAPFILEHEADER), 1, pf);
+	fwrite(info, sizeof(BITMAPINFOHEADER), 1, pf);
+	fwrite(rgb, sizeof(BYTE), size, pf);
+}
+
+BYTE* ImageUtil::toByte(RGB* rgb, int width, int height, int biSize, RGBTAG tag)
+{
+	BYTE *byte = new BYTE[biSize];
+	int point = 0;
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			switch (tag)
+			{
+			case R:
+				byte[point++] = 0;
+				byte[point++] = 0;
+				byte[point++] = rgb[i * width + j].r;
+				break;
+			case G:
+				byte[point++] = 0;
+				byte[point++] = rgb[i * width + j].g;
+				byte[point++] = 0;
+				break;
+			case B:
+				byte[point++] = rgb[i * width + j].b;
+				byte[point++] = 0;
+				byte[point++] = 0;
+				break;
+			case ALL:
+				byte[point++] = rgb[i * width + j].b;
+				byte[point++] = rgb[i * width + j].g;
+				byte[point++] = rgb[i * width + j].r;
+				break;
+			}
+
+		}
+
+		while (point % 4 != 0)
+			byte[point++] = 0;
+	}
+
+	return byte;
+}
+
+void ImageUtil::bitmapTo3SignalColorBitmap(const std::string& path)
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+
+	FILE * pfin = fopen(path.c_str(), "rb");
+	FILE * pfoutR = fopen("bitmap/bmp/r.bmp", "wb");
+	FILE * pfoutG = fopen("bitmap/bmp/g.bmp", "wb");
+	FILE * pfoutB = fopen("bitmap/bmp/b.bmp", "wb");
+
+
+	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
+	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
+
+	const int height = infoHeader.biHeight;
+	int width = infoHeader.biWidth;
+	if (infoHeader.biBitCount > 1)
+	{
+		int byteWidth = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
+		int size = byteWidth * height;
+
+		BYTE *img = new BYTE[size];
+		RGB *imgRGB = new RGB[width * height];
+
+		fseek(pfin, fileHeader.bfOffBits, 0);
+		fread(img, sizeof(BYTE), size, pfin);
+		int point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				imgRGB[i * width + j].b = img[point++];
+				imgRGB[i * width + j].g = img[point++];
+				imgRGB[i * width + j].r = img[point++];
+			}
+
+			while (point % 4 != 0)
+				point++;
+		}
+
+		writeImg(&fileHeader, &infoHeader,
+			toByte(imgRGB, width, height, infoHeader.biSizeImage, RGBTAG::R),
+			infoHeader.biSizeImage,
+			pfoutR);
+
+		writeImg(&fileHeader, &infoHeader,
+			toByte(imgRGB, width, height, infoHeader.biSizeImage, RGBTAG::G),
+			infoHeader.biSizeImage,
+			pfoutG);
+
+		writeImg(&fileHeader, &infoHeader,
+			toByte(imgRGB, width, height, infoHeader.biSizeImage, RGBTAG::B),
+			infoHeader.biSizeImage,
+			pfoutB);
+
+		delete[] img;
+		delete[] imgRGB;
+	}
+
+	fclose(pfin);
+	fclose(pfoutR);
+	fclose(pfoutG);
+	fclose(pfoutB);
+}
+
+void ImageUtil::bitmap2Gray(const std::string& path)
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+
+	FILE * pfin = fopen(path.c_str(), "rb");
+	FILE * pfout = fopen("bitmap/bmp/gray.bmp", "wb");
+	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
+	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
+
+	int height = infoHeader.biHeight, width = infoHeader.biWidth;
+	if (infoHeader.biBitCount == 24)
+	{
+		int byteWidth = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
+		int size = byteWidth * height;
+
+		BYTE *img = new BYTE[size];
+		RGB *imgRGB = new RGB[width * height];
+
+		fseek(pfin, fileHeader.bfOffBits, 0);
+		fread(img, sizeof(BYTE), size, pfin);
+		int point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				imgRGB[i * width + j].b = img[point++];
+				imgRGB[i * width + j].g = img[point++];
+				imgRGB[i * width + j].r = img[point++];
+			}
+
+			while (point % 4 != 0)
+				point++;
+		}
+
+		infoHeader.biBitCount = 8;
+		infoHeader.biClrUsed = 256;
+
+		RGBQUAD rgbQuad[256];
+		for (int i = 0; i < 256; i++)
+		{
+			rgbQuad[i].rgbRed = i;
+			rgbQuad[i].rgbGreen = i;
+			rgbQuad[i].rgbBlue = i;
+			rgbQuad[i].rgbReserved = 0;
+
+		}
+
+		fileHeader.bfOffBits = 54 + 4 * 256;
+
+		int byteLine = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
+		BYTE *newIMG = new BYTE[byteLine * height];
+		infoHeader.biSizeImage = byteLine * height;
+		fileHeader.bfSize = 54 + byteLine * height + 4 * 256;
+
+
+		point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				newIMG[point++] = imgRGB[i * width + j].b * 0.114 +
+					imgRGB[i * width + j].g * 0.587 + imgRGB[i * width + j].r * 0.299;
+
+			}
+
+			while (point % 4 != 0)
+				newIMG[point++] = 0;
+		}
+
+		fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfout);
+		fwrite(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfout);
+		fwrite(&rgbQuad, 4 * 256, 1, pfout);
+		fwrite(newIMG, sizeof(BYTE), byteLine * height, pfout);
+
+		delete[] newIMG;
+
+	}
+
+	fclose(pfin);
+	fclose(pfout);
+}
+
+void ImageUtil::gray2Anticolor()
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+
+	FILE * pfin = fopen("bitmap/bmp/gray.bmp", "rb");
+	FILE * pfout = fopen("bitmap/bmp/anti_color.bmp", "wb");
+	fread(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfin);
+	fread(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfin);
+
+	int height = infoHeader.biHeight, width = infoHeader.biWidth;
+	if (infoHeader.biBitCount == 8)
+	{
+		int byteWidth = (width * infoHeader.biBitCount / 8 + 3) / 4 * 4;
+		int size = byteWidth * height;
+
+		BYTE *img = new BYTE[size];
+		BYTE *imgAnticolor = new BYTE[size];
+
+		RGBQUAD rgbquad[256];
+
+		fread(rgbquad, sizeof(RGBQUAD), 256, pfin);
+		fread(img, sizeof(BYTE), size, pfin);
+		int point1 = 0, point = 0;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				imgAnticolor[point++] = std::abs(img[point1++] - static_cast<byte>(255));
+			}
+
+			while (point % 4 != 0)
+			{
+				imgAnticolor[point++] = 0;
+				point1++;
+			}
+
+		}
+
+		fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pfout);
+		fwrite(&infoHeader, sizeof(BITMAPINFOHEADER), 1, pfout);
+		fwrite(&rgbquad, 4 * 256, 1, pfout);
+		fwrite(imgAnticolor, sizeof(BYTE), size, pfout);
+
+		delete[] img;
+		delete[] imgAnticolor;
+	}
+
+	fclose(pfin);
+	fclose(pfout);
+}
 
 ImageUtil::IMGDATA ImageUtil::balance(const ImageUtil::GRAYHISTOGRAM histogram, const ImageUtil::IMGDATA data)
 {
@@ -100,6 +349,8 @@ IMGDATA ImageUtil::laplaceOstu2(IMGDATA data)
 {
 	BYTE * newData = new BYTE[data.length];
 
+	progressBar.reset(data.width * data.height, "Laplacce滤波....");
+
 	for (int i = 0; i < data.height; i++)
 	{
 		for (int j = 0; j < data.width; j++)
@@ -129,6 +380,8 @@ IMGDATA ImageUtil::laplaceOstu2(IMGDATA data)
 				1 * data.pImg[up * data.width + left] + 1 * data.pImg[up * data.width + j] + 1 * data.pImg[up * data.width + right] +
 				1 * data.pImg[i * data.width + left] + -8 * data.pImg[i * data.width + j] + 1 * data.pImg[i * data.width + right] +
 				1 * data.pImg[down * data.width + left] + 1 * data.pImg[down * data.width + j] + 1 * data.pImg[down * data.width + right]);
+
+			++progressBar;
 		}
 
 	}
@@ -142,6 +395,7 @@ IMGDATA ImageUtil::laplaceOstu2(IMGDATA data)
 IMGDATA ImageUtil::mid(IMGDATA data)
 {
 	BYTE *newData = new BYTE[data.length];
+	progressBar.reset((data.width - 2) * (data.height - 2), "中值滤波....");
 	for (int i = 1; i < data.height - 1; i++)
 	{
 		for (int j = 1; j < data.width - 1; j++)
@@ -151,6 +405,8 @@ IMGDATA ImageUtil::mid(IMGDATA data)
 				data.pImg[(i)* data.width + j - 1],data.pImg[(i)* data.width + j],data.pImg[(i)*data.width + j + 1],
 				data.pImg[(i + 1) * data.width + j - 1],data.pImg[(i + 1) * data.width + j],data.pImg[(i + 1)*data.width + j + 1] };
 			newData[i * data.width + j] = getMid(arr);
+
+			++progressBar;
 			//delete[] arr;
 		}
 	}
@@ -184,6 +440,8 @@ IMGDATA ImageUtil::advenage(IMGDATA data)
 {
 	BYTE * newData = new BYTE[data.length];
 
+	progressBar.reset(data.width * data.height, "均值滤波....");
+
 	for (int i = 0; i < data.height; i++)
 	{
 		for (int j = 0; j < data.width; j++)
@@ -213,6 +471,8 @@ IMGDATA ImageUtil::advenage(IMGDATA data)
 				(data.pImg[up * data.width + left] + 2 * data.pImg[up * data.width + j] + data.pImg[up * data.width + right] +
 					2 * data.pImg[i * data.width + left] + 4 * data.pImg[i * data.width + j] + 2 * data.pImg[i * data.width + right] +
 					data.pImg[down * data.width + left] + 2 * data.pImg[down * data.width + j] + data.pImg[down * data.width + right]) / 16);
+
+			++progressBar;
 		}
 
 	}
@@ -231,11 +491,10 @@ IMGDATA ImageUtil::rotate(IMGDATA data)
 
 	int k = data.infoHeader.biBitCount / 8;
 
+	progressBar.reset(data.width * data.height, "旋转变换....");
+
 	BYTE *newData = new BYTE[data.width * data.height * k];
-	for (int i = 0; i < data.width * data.height * k; i++)
-	{
-		newData[i] = 0;
-	}
+	memset(newData, 0, data.width * data.height * k);
 
 
 
@@ -301,6 +560,8 @@ IMGDATA ImageUtil::rotate(IMGDATA data)
 			// 	newData[pixelPoint + biCount] = data.pImg[static_cast<int>(originY) * data.width * k + static_cast<int>(originX) * k + biCount];
 			// }
 
+			++progressBar;
+
 		}
 	}
 
@@ -329,10 +590,9 @@ IMGDATA ImageUtil::translate(IMGDATA data)
 	ImageUtil::Math::Matrix3x1i xyMat({ 0,0,0 });
 
 	BYTE *newData = new BYTE[data.width * data.height * k];
-	for (int i = 0; i < data.width * data.height * k; i++)
-	{
-		newData[i] = 0;
-	}
+	memset(newData, 0, data.width * data.height * k);
+
+	progressBar.reset(data.width * data.height, "图像位移变换....");
 
 	int point = -k;
 	for (int i = 0; i < data.height; i++)
@@ -352,6 +612,8 @@ IMGDATA ImageUtil::translate(IMGDATA data)
 			{
 				newData[point + biCount] = data.pImg[y * data.width * k + x * k + biCount];
 			}
+
+			++progressBar;
 		}
 	}
 
@@ -387,6 +649,8 @@ ImageUtil::IMGDATA ImageUtil::scale(ImageUtil::IMGDATA data)
 		0,        1 / yScale,0,
 		0,        0,       1 });
 	ImageUtil::Math::Matrix3x1d xyMat({ 0,0,0 });
+
+	progressBar.reset(newImg.width * newImg.height, "缩放变换....");
 
 	//兼容灰度图，24位图，32位图
 	BYTE *newData = new BYTE[newImg.width * k * newImg.height];
@@ -426,6 +690,8 @@ ImageUtil::IMGDATA ImageUtil::scale(ImageUtil::IMGDATA data)
 
 			}
 
+			++progressBar;
+
 		}
 	}
 
@@ -440,11 +706,12 @@ IMGDATA ImageUtil::mirror(IMGDATA data)
 								-1, 0, static_cast<int>(data.width),
 								 0, 1, 0,
 								 0, 0, 1 });
-	std::cout << mat;
+	//std::cout << mat;
 
 	const int k = data.infoHeader.biBitCount / 8;
 	BYTE *newData = new BYTE[data.length];
 	int point = -k;
+	progressBar.reset(data.width * data.height, "镜像变换....");
 	for (int i = 0; i < data.height; i++)
 	{
 		for (int j = 0; j < data.width; j++)
@@ -456,7 +723,10 @@ IMGDATA ImageUtil::mirror(IMGDATA data)
 			{
 				//newData[point + b] = data.pImg[i * data.width * k + (data.width * k - 1 - j - (k - 1 - b))];
 				newData[point + b] = data.pImg[result[1][0] * data.width * k + result[0][0] * k + b];
+				
 			}
+
+			++progressBar;
 
 		}
 	}
@@ -590,7 +860,7 @@ void ImageUtil::laplaceOstu(const ImageUtil::IMGDATA& data)
 
 }
 
-void ImageUtil::otsu(const ImageUtil::ImageData& data)
+ImageData ImageUtil::otsu(const ImageUtil::ImageData& data)
 {
 	ImageUtil::GrayHistogram histogram = ImageUtil::getHistogram(data);
 	histogram.normalize();
@@ -599,10 +869,14 @@ void ImageUtil::otsu(const ImageUtil::ImageData& data)
 
 	const double mG = otsuM(len, histogram);
 	double delta[len];
+
+	progressBar.reset(len, "开始计算Ostu阈值");
+
 	for (int i = 0; i < len; i++)
 	{
-
 		delta[i] = otsuVariance(i, mG, histogram);
+
+		++progressBar;
 	}
 
 	double max = -1;
@@ -630,23 +904,28 @@ void ImageUtil::otsu(const ImageUtil::ImageData& data)
 	k /= maxList.size();
 
 	if (k == -1)
-		return;
+		return {};
 
 	ImageUtil::ImageData img = data;
 	BYTE *imgData = new BYTE[data.width * data.height];
-	for (int i = 0; i < data.width * data.height; i++)
+	progressBar.reset(data.width * data.height, "开始Ostu阈值分割");
+	for (ImageSize i = 0; i < data.width * data.height; i++)
 	{
 		imgData[i] = data.pImg[i] > k ? 1 : 0;
+
+		++progressBar;
 	}
 
-	std::string name("bitmap/threshold_by_otsu");
-	name.append("_")
-		.append(std::to_string(k))
-		.append(".bmp");
+	// std::string name("bitmap/threshold_by_otsu");
+	// name.append("_")
+	// 	.append(std::to_string(k))
+	// 	.append(".bmp");
 
 	img.pImg = imgData;
-	ImageUtil::outputBlackWhiteImage(img, name);
-	ImageUtil::outputHistogram(histogram, "bitmap/histogram/threshold_by_otsu_h.bmp", k);
+	// ImageUtil::outputBlackWhiteImage(img, name);
+	// ImageUtil::outputHistogram(histogram, "bitmap/histogram/threshold_by_otsu_h.bmp", k);
+
+	return img;
 }
 
 double ImageUtil::otsuVariance(const int k, const double mG, const ImageUtil::GrayHistogram& histogram)

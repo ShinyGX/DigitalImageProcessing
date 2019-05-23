@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cassert>
 #include "Math.h"
+#include "ProcessBar.h"
 
 
 int ImageUtil::clamp(const int c)
@@ -42,7 +43,8 @@ ImageUtil::ImageData ImageUtil::loadImage(const std::string& path)
 	}
 
 	BYTE *imgWithoutError = new BYTE[(infoHeader.biWidth * infoHeader.biBitCount / 8) * infoHeader.biHeight];
-	//int byteWidth = (infoHeader.biWidth * (infoHeader.biClrUsed / 8) + 3) / 4 * 4;
+
+
 	int point = -1;
 	for(int i = 0;i < infoHeader.biHeight;i++)
 	{
@@ -187,6 +189,7 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 	BYTE *img = new BYTE[data.infoHeader.biSizeImage];
 	const ImageSize byteWidth = (data.infoHeader.biWidth * data.infoHeader.biBitCount / 8);
 	int point = -1;
+
 	for(ImageSize i = 0;i < data.height;i++)
 	{
 		for(ImageSize j = 0;j < byteWidth;j++)
@@ -198,7 +201,7 @@ void ImageUtil::outputImage(ImageData data, const int clrUsed, const std::string
 			img[++point] = 0;
 	}
 
-	std::cout << "output " << path << "...." << std::endl;
+	std::cout << std::endl << "output " << path << "...." << std::endl;
 	out.write(reinterpret_cast<char *>(&data.fileHeader), sizeof(BITMAPFILEHEADER));
 	out.write(reinterpret_cast<char *>(&data.infoHeader), sizeof(BITMAPINFOHEADER));
 	out.write(reinterpret_cast<char *>(&data.rgbquad), clrUsed * sizeof(RGBQUAD));
@@ -397,12 +400,11 @@ void ImageUtil::outputHistogram(const GrayHistogram& histogram, const std::strin
 	img.infoHeader = info;
 	img.rgbquad[0] = black;
 	img.rgbquad[1] = white;
-	img.rgbquad[2] = red;
-	img.pImg = imgData;
+	img.rgbquad[2] = red;	
 	img.width = 256;
 	img.height = 256;
 	img.length = 256 * 256;
-
+	img.pImg = imgData;
 	outputImage(img, path);
 
 	delete[] imgData;
@@ -410,15 +412,17 @@ void ImageUtil::outputHistogram(const GrayHistogram& histogram, const std::strin
 
 ImageUtil::ImageData ImageUtil::toTwoValueImage(ImageData& data, const byte t)
 {
-	for(ImageSize i = 0;i < data.width * data.height ;i++)
+	for (ImageSize i = 0; i < data.height; i++)
 	{
-		if(data.pImg[i] > t)
-		{
-			data.pImg[i] = 1;
-		}
-		else
-		{
-			data.pImg[i] = 0;
+		for (ImageSize j = 0; j < data.width; j++) {
+			if (data[i][j] > t)
+			{
+				data[i][j] = 1;
+			}
+			else
+			{
+				data[i][j] = 0;
+			}
 		}
 	}
 
@@ -462,6 +466,7 @@ bool ImageUtil::Pixel::operator==(Pixel& other)
 	return vec2[0] == other.vec2[0] && vec2[1] == other.vec2[1];
 }
 
+
 ImageUtil::ImageData & ImageUtil::ImageData::operator+(ImageData& d0)
 {
 	for(ImageSize i = 0;i < height;i++)
@@ -493,3 +498,4 @@ BYTE* ImageUtil::ImageData::operator[](const int i) const
 {
 	return &pImg[i * width];
 }
+

@@ -1,6 +1,6 @@
 #include "Edge.h"
 #include <queue>
-
+#include "ProcessBar.h"
 
 
 bool ImageUtil::EdgeDetection::WatershedPixel::allNeigbourIsWshed()
@@ -98,6 +98,7 @@ ImageUtil::EdgeDetection::WatershedStructure::~WatershedStructure()
 
 ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, const int minVal, const int maxVal)
 {
+	progressBar.reset((data.height - 4) * (data.width - 4), "开始Gaussian滤波");
 	double** gaus = getGaussianKernel(5, 0.01);
 	for (unsigned int i = 2; i < data.height - 2; i++)
 	{
@@ -112,16 +113,19 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 				}
 			}
 			data[i][j] = sum;
+			++progressBar;
 		}
 	}
 
-	ImageUtil::outputImage(data, "bitmap/gaus.bmp");
 	BYTE *sobelImg = new BYTE[data.width * data.height];
 	int *gxArr = new int[data.width * data.height];
 	int *gyArr = new int[data.width * data.height];
 	memset(sobelImg, 0, data.width * data.height);
 	memset(gxArr, 0, data.width * data.height);
 	memset(gyArr, 0, data.width * data.height);
+
+
+	progressBar.reset((data.height - 2) * (data.width - 2), "进行Sobel算子计算边缘");
 
 	for (ImageUtil::ImageSize i = 1; i < data.height - 1; i++)
 	{
@@ -138,6 +142,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 
 			const double g = std::sqrt(gx*gx + gy * gy);
 			sobelImg[i*data.width + j] = g;
+
+			++progressBar;
 		}
 	}
 
@@ -146,6 +152,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 	{
 		temp[i] = sobelImg[i];
 	}
+
+	progressBar.reset((data.height - 2) * (data.width - 2), "非极大值抑制。。。");
 
 	for (ImageUtil::ImageSize i = 1; i < data.height - 1; i++)
 	{
@@ -192,6 +200,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 					temp[i * data.width + j] = 0;
 				}
 			}
+
+			++progressBar;
 		}
 	}
 
@@ -226,6 +236,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 		}
 	}
 
+	progressBar.reset(highPixQue.size(), "进行边缘8-联通....");
+
 	memset(sobelImg, 0, data.width*data.height);
 	while (!highPixQue.empty())
 	{
@@ -256,6 +268,7 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 							if (lowPix[(p.getY() + i + y) * data.width + p.getX() + j + x] == 1)
 							{
 								highPixQue.push(Pixel(p.getX() + j, p.getY() + i, 1));
+								progressBar.addMax(1);
 							}
 
 
@@ -266,6 +279,7 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 				}
 			}
 		}
+		++progressBar;
 	}
 
 	delete[] lowPix;
@@ -314,6 +328,7 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::LOG(ImageUtil::IMGDATA data, double
 	BYTE *img = new BYTE[data.width * data.height];
 	memset(img, 0, data.width * data.height);
 	double** gaus = getGaussianKernel(5, sqrSigma);
+	progressBar.reset((data.width - 4) * (data.height - 4), "高斯滤波....");
 	for (int i = 2; i < data.height - 2; i++)
 	{
 		for (int j = 2; j < data.width - 2; j++)
@@ -328,6 +343,7 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::LOG(ImageUtil::IMGDATA data, double
 
 			}
 			img[i * data.width + j] = sum;
+			++progressBar;
 		}
 	}
 	// for (int i = 2; i < data.height - 2; i++)
@@ -344,7 +360,7 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::LOG(ImageUtil::IMGDATA data, double
 	// 	}
  //
 	// }
-
+	progressBar.reset(data.width * data.height, "LOG边缘检测....");
 	for (int i = 0; i < data.height; i++)
 	{
 		for (int j = 0; j < data.width; j++)
@@ -374,6 +390,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::LOG(ImageUtil::IMGDATA data, double
 				1 * data.pImg[up * data.width + left] + 1 * data.pImg[up * data.width + j] + 1 * data.pImg[up * data.width + right] +
 				1 * data.pImg[i * data.width + left] + -8 * data.pImg[i * data.width + j] + 1 * data.pImg[i * data.width + right] +
 				1 * data.pImg[down * data.width + left] + 1 * data.pImg[down * data.width + j] + 1 * data.pImg[down * data.width + right]);
+
+			++progressBar;
 		}
 
 	}
@@ -393,6 +411,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::sobel(ImageUtil::IMGDATA data, cons
 {
 	BYTE *img = new BYTE[data.width * data.height];
 	memset(img, 0, data.width * data.height);
+
+	progressBar.reset((data.width - 1) * (data.height - 1), "sobel边缘检测....");
 	for (int i = 1; i < data.height - 1; i++)
 	{
 		for (int j = 1; j < data.width - 1; j++)
@@ -407,6 +427,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::sobel(ImageUtil::IMGDATA data, cons
 			const double g = std::sqrt(gx*gx + gy * gy);
 			if (g > threadhold)
 				img[i*data.width + j] = 1;
+
+			++progressBar;
 		}
 	}
 	data.pImg = img;
@@ -416,6 +438,8 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::prewitt(ImageUtil::IMGDATA data, co
 {
 	BYTE *img = new BYTE[data.width * data.height];
 	memset(img, 0, data.width * data.height);
+
+	progressBar.reset((data.width - 1) * (data.height - 1), "prewitt边缘检测....");
 	for (int i = 1; i < data.height - 1; i++)
 	{
 		for (int j = 1; j < data.width - 1; j++)
@@ -431,8 +455,102 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::prewitt(ImageUtil::IMGDATA data, co
 				img[i * data.width + j] = 1;
 			}
 
+			++progressBar;
 		}
 	}
 	data.pImg = img;
+	return data;
+}
+
+ImageUtil::IMGDATA ImageUtil::Hough::line(ImageUtil::ImageData data, double deltaSigma)
+{
+
+	typedef ImageUtil::ImageSize uint;
+
+	const int r = std::sqrt(data.width * data.width + data.height * data.height);
+	const int d = 2 * r;
+	const int sigma = 181 / deltaSigma;
+
+	uint *houghSpace = new uint[d  * sigma];
+	memset(houghSpace, 0, d * sigma * sizeof(uint));
+
+
+	ImageUtil::ImageData cannyImg = ImageUtil::EdgeDetection::canny(data, 40, 80);
+
+	ImageUtil::outputBlackWhiteImage(cannyImg, "bitmap/canny.bmp");
+	//ImageUtil::toTwoValueImage(cannyImg);
+
+	ImageUtil::progressBar.reset(data.height * data.width, "生成HoughSpace");
+
+	for (uint i = 0; i < data.height; i++)
+	{
+		for (uint j = 0; j < data.width; j++)
+		{
+			if (cannyImg[i][j] > 0)
+			{
+				double s = 0;
+				while (true) {
+					const int p = j * std::cos(ImageUtil::toRadian(static_cast<double>(s))) +
+						i * std::sin(ImageUtil::toRadian(static_cast<double>(s))) + r;
+					houghSpace[p * sigma + static_cast<int>(s / deltaSigma)]++;
+
+
+
+					s += deltaSigma;
+					if (s > 180)
+						break;
+				}
+			}
+			++ImageUtil::progressBar;
+		}
+	}
+
+	uint max = 0;
+	for (int i = 0; i < r * sigma; i++)
+	{
+		if (houghSpace[i] > max)
+			max = houghSpace[i];
+	}
+
+
+	ImageUtil::progressBar.reset(data.height * data.width, "检测直线....");
+	for (uint i = 0; i < data.height; i++)
+	{
+		for (uint j = 0; j < data.width; j++)
+		{
+			double s = 0;
+			while (true)
+			{
+				const int p = j * std::cos(ImageUtil::toRadian(static_cast<double>(s)))
+					+ i * std::sin(ImageUtil::toRadian(static_cast<double>(s))) + r;
+				if (houghSpace[p * sigma + static_cast<int>(s / deltaSigma)] > max * 0.9)
+				{
+					data[i][j] = static_cast<byte>(255);
+				}
+
+				s += deltaSigma;
+				if (s > 180)
+					break;
+			}
+
+			++ImageUtil::progressBar;
+		}
+	}
+
+	BYTE* houghSpaceImg = new BYTE[d * sigma];
+
+	for (int i = 0; i < d*sigma; i++)
+	{
+		houghSpaceImg[i] = ImageUtil::clamp(static_cast<double>(houghSpace[i]) / max * 255);
+	}
+
+	ImageUtil::outputImage(houghSpaceImg, sigma, d, 256, 8, data.rgbquad, "bitmap/houghSpace.bmp");
+
+	data.rgbquad[255].rgbBlue = 0;
+	data.rgbquad[255].rgbGreen = 0;
+
+	delete[] houghSpace;
+	delete[] cannyImg.pImg;
+	delete[] houghSpaceImg;
 	return data;
 }

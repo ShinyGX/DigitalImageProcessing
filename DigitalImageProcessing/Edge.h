@@ -14,8 +14,8 @@ namespace ImageUtil
 
 			static const int WSHED = 0;
 			static const int INIT = -1;
-			static const int MASK = -1;
-			static const int FICTITIOUS = -2;
+			static const int MASK = -2;
+			static const int FICTITIOUS = -3;
 
 
 			WatershedPixel() { dist = FICTITIOUS; }
@@ -31,12 +31,17 @@ namespace ImageUtil
 		{
 			std::vector<WatershedPixel *> watershed;
 		public:
+			WatershedStructure() = delete;
+			WatershedStructure(WatershedStructure&&) = delete;
+			WatershedStructure(WatershedStructure&) = delete;
 			WatershedStructure(byte* pixels, const int width, const int height);
 			ImageSize size() const;
 			WatershedPixel * at(ImageSize index);
 
 			~WatershedStructure();
-		
+
+			WatershedStructure &operator=(WatershedStructure&) = delete;
+			WatershedStructure &operator=(WatershedStructure&&) = delete;
 		};
 
 		ImageUtil::IMGDATA prewitt(ImageUtil::IMGDATA data, int threadhold);
@@ -44,6 +49,11 @@ namespace ImageUtil
 		ImageUtil::IMGDATA LOG(ImageUtil::IMGDATA data, double sqrSigma, int threadhold);
 		ImageUtil::IMGDATA canny(ImageUtil::IMGDATA data, const int minVal, const int maxVal);
 		double** getGaussianKernel(const int size, const double sqrSigma);
+	}
+
+	namespace Hough
+	{
+		ImageUtil::IMGDATA line(ImageUtil::ImageData data, double deltaSigma);
 	}
 
 }
