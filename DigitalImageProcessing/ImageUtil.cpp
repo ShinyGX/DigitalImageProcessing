@@ -431,7 +431,7 @@ ImageUtil::ImageData ImageUtil::toTwoValueImage(ImageData& data, const byte t)
 
 double ImageUtil::toRadian(const double angle)
 {
-	return angle * PI / 180;
+	return angle * __PI / 180;
 }
 
 

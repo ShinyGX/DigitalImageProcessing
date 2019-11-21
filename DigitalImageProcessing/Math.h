@@ -4,7 +4,7 @@
 
 namespace ImageUtil
 {
-	const double PI = 3.1415926;
+	const double __PI = 3.1415926;
 
 	namespace Math {
 		template<typename T, int Col = 3>

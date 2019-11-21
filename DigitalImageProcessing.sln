@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Exercise10", "Exercise10\Ex
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Together", "Together\Together.vcxproj", "{91CB9550-09FC-4A5F-9416-EE9ACA19FBC1}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{C584A47E-1B9D-41B8-B3AE-9DE82733737F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -131,6 +133,10 @@ Global
 		{91CB9550-09FC-4A5F-9416-EE9ACA19FBC1}.Release|x64.Build.0 = Release|x64
 		{91CB9550-09FC-4A5F-9416-EE9ACA19FBC1}.Release|x86.ActiveCfg = Release|Win32
 		{91CB9550-09FC-4A5F-9416-EE9ACA19FBC1}.Release|x86.Build.0 = Release|Win32
+		{C584A47E-1B9D-41B8-B3AE-9DE82733737F}.Debug|x64.ActiveCfg = Debug
+		{C584A47E-1B9D-41B8-B3AE-9DE82733737F}.Debug|x86.ActiveCfg = Debug
+		{C584A47E-1B9D-41B8-B3AE-9DE82733737F}.Release|x64.ActiveCfg = Release
+		{C584A47E-1B9D-41B8-B3AE-9DE82733737F}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

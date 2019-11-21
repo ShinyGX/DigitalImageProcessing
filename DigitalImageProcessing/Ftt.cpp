@@ -18,7 +18,7 @@ std::complex<double>* ImageUtil::FFT::dft2d(ImageData& data)
 				for (int j = 0; j < data.height; j++)
 				{
 					double I = data.pImg[i * data.width + j];
-					double X = PI * 2 * (static_cast<double>(i)*u / static_cast<double>(data.width) +
+					double X = __PI * 2 * (static_cast<double>(i)*u / static_cast<double>(data.width) +
 						static_cast<double>(j)*v / static_cast<double>(data.height));
 
 					real += std::cos(X)*I;
@@ -262,7 +262,7 @@ std::complex<double>* ImageUtil::FFT::realFtt(double* src, int size)
 
 void ImageUtil::FFT::getWN(double n, double size, std::complex<double>& dst)
 {
-	const double x = 2.0 * PI * n / size;
+	const double x = 2.0 * __PI * n / size;
 	dst.real(std::cos(x));
 	dst.imag(-std::sin(x));
 }

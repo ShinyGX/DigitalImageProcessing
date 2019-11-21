@@ -499,7 +499,7 @@ IMGDATA ImageUtil::rotate(IMGDATA data)
 
 
 	//弧度制的角度
-	double angle = 1.0 * rotateAngle * PI / 180;
+	double angle = 1.0 * rotateAngle * __PI / 180;
 	int pixelPoint = -k;
 	int midY = static_cast<float>(data.height) / 2, midX = static_cast<float>(data.width) / 2;
 

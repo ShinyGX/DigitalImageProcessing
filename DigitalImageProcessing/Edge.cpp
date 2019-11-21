@@ -163,7 +163,7 @@ ImageUtil::IMGDATA ImageUtil::EdgeDetection::canny(ImageUtil::IMGDATA data, cons
 			if (gxArr[i*data.width + j] == 0)
 				dir = 90;
 			else
-				dir = (std::atan(gyArr[i*data.width + j] / gxArr[i*data.width + j])) * 180 / ImageUtil::PI;
+				dir = (std::atan(gyArr[i*data.width + j] / gxArr[i*data.width + j])) * 180 / ImageUtil::__PI;
 			//ˮƽ
 			if ((dir >= 157.5 || dir <= -157.5) || (dir <= 22.5 && dir >= -22.5))
 			{
